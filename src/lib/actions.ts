@@ -122,7 +122,7 @@ export async function quickDemoLogin(role: "COMMITTEE" | "TEACHER" | "PARENT") {
 
 export async function logoutAction() {
   await clearAuthCookie();
-  redirect("/login");
+  redirect("/");
 }
 
 // --- USER & TEACHER ACTIONS (COMMITTEE) ---
