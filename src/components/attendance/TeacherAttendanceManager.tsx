@@ -2,40 +2,41 @@
 
 import React, { useState, useTransition } from "react";
 import { formatTime, formatDate } from "@/lib/utils";
+import { markSingleAttendanceAction, batchSaveAttendanceAction } from "@/lib/actions";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
-import { batchAttendanceAction, markSingleAttendanceAction } from "@/lib/actions";
-import { toast } from "sonner";
 import {
-  Check,
-  CheckCheck,
   Clock,
-  UserX,
-  ShieldAlert,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  CheckCheck,
   Save,
   MessageSquare,
+  ShieldAlert,
+  Calendar,
 } from "lucide-react";
+import { toast } from "sonner";
 
-interface StudentAttendanceItem {
-  id: string;
-  admissionNumber: string;
+export interface StudentAttendanceItem {
+  id: string; // student id
   fullName: string;
-  gender: string;
+  admissionNumber: string;
   parentName: string;
   parentPhone: string | null;
   attendanceRecord?: {
     id: string;
     status: "PRESENT" | "ABSENT" | "LATE" | "EXCUSED";
-    checkInTime?: string | null;
-    checkOutTime?: string | null;
-    remarks?: string | null;
+    checkInTime: string | null;
+    checkOutTime: string | null;
+    remarks: string | null;
   } | null;
 }
 
 interface TeacherAttendanceManagerProps {
   classId: string;
   className: string;
-  sessionDate: string;
+  sessionDate: string; // YYYY-MM-DD
   students: StudentAttendanceItem[];
 }
 
@@ -47,19 +48,19 @@ export function TeacherAttendanceManager({
 }: TeacherAttendanceManagerProps) {
   const [isPending, startTransition] = useTransition();
 
-  // Local state initialized from props
+  // Local state for interactive editing before save
   const [attendanceState, setAttendanceState] = useState<
     Record<
       string,
       {
         status: "PRESENT" | "ABSENT" | "LATE" | "EXCUSED";
-        checkInTime?: string | null;
-        checkOutTime?: string | null;
+        checkInTime: string | null;
+        checkOutTime: string | null;
         remarks: string;
       }
     >
   >(() => {
-    const map: Record<string, any> = {};
+    const map: any = {};
     students.forEach((s) => {
       map[s.id] = {
         status: s.attendanceRecord?.status || "PRESENT",
@@ -155,95 +156,49 @@ export function TeacherAttendanceManager({
   };
 
   const handleBatchCheckInAll = () => {
-    startTransition(async () => {
-      try {
-        const payload = Object.entries(attendanceState).map(([sId, state]) => ({
-          studentId: sId,
-          status: state.status,
-          remarks: state.remarks,
-        }));
-
-        const res = await batchAttendanceAction({
-          classId,
-          sessionDate,
-          actionType: "BATCH_CHECK_IN",
-          studentsData: payload,
-        });
-
-        if (res.error) {
-          toast.error(res.error);
-        } else {
-          const nowStr = new Date().toISOString();
-          setAttendanceState((prev) => {
-            const next = { ...prev };
-            Object.keys(next).forEach((sId) => {
-              if (next[sId].status !== "ABSENT" && next[sId].status !== "EXCUSED") {
-                next[sId] = { ...next[sId], checkInTime: nowStr };
-              }
-            });
-            return next;
-          });
-          toast.success("Batch Check-In completed for all present students!");
+    const nowIso = new Date().toISOString();
+    setAttendanceState((prev) => {
+      const next = { ...prev };
+      Object.keys(next).forEach((id) => {
+        if (next[id].status === "PRESENT" && !next[id].checkInTime) {
+          next[id].checkInTime = nowIso;
         }
-      } catch (err: any) {
-        toast.error(err.message || "Batch action failed");
-      }
+      });
+      return next;
     });
+    toast.info("Batch Check-In applied locally. Click 'Save All Logs' to commit.");
   };
 
   const handleBatchCheckOutAll = () => {
-    startTransition(async () => {
-      try {
-        const payload = Object.entries(attendanceState).map(([sId, state]) => ({
-          studentId: sId,
-          status: state.status,
-          remarks: state.remarks,
-        }));
-
-        const res = await batchAttendanceAction({
-          classId,
-          sessionDate,
-          actionType: "BATCH_CHECK_OUT",
-          studentsData: payload,
-        });
-
-        if (res.error) {
-          toast.error(res.error);
-        } else {
-          const nowStr = new Date().toISOString();
-          setAttendanceState((prev) => {
-            const next = { ...prev };
-            Object.keys(next).forEach((sId) => {
-              if (next[sId].status !== "ABSENT" && next[sId].status !== "EXCUSED") {
-                next[sId] = { ...next[sId], checkOutTime: nowStr };
-              }
-            });
-            return next;
-          });
-          toast.success("Batch Check-Out recorded successfully!");
+    const nowIso = new Date().toISOString();
+    setAttendanceState((prev) => {
+      const next = { ...prev };
+      Object.keys(next).forEach((id) => {
+        if (next[id].status === "PRESENT" && !next[id].checkOutTime) {
+          next[id].checkOutTime = nowIso;
         }
-      } catch (err: any) {
-        toast.error(err.message || "Batch action failed");
-      }
+      });
+      return next;
     });
+    toast.info("Batch Check-Out applied locally. Click 'Save All Logs' to commit.");
   };
 
   const handleSaveAll = () => {
+    const records = Object.entries(attendanceState).map(([studentId, data]) => ({
+      studentId,
+      status: data.status,
+      checkInTime: data.checkInTime,
+      checkOutTime: data.checkOutTime,
+      remarks: data.remarks,
+    }));
+
     startTransition(async () => {
       try {
-        const payload = Object.entries(attendanceState).map(([sId, state]) => ({
-          studentId: sId,
-          status: state.status,
-          remarks: state.remarks,
-        }));
-
-        const res = await batchAttendanceAction({
+        const res = await batchSaveAttendanceAction({
           classId,
           sessionDate,
-          actionType: "SAVE_ALL",
-          studentsData: payload,
+          records,
         });
-
         if (res.error) {
           toast.error(res.error);
         } else {
@@ -258,7 +213,7 @@ export function TeacherAttendanceManager({
   return (
     <div className="space-y-4">
       {/* Top Action Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-white rounded-2xl border border-slate-200 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-white rounded-2xl border border-slate-200 shadow-sm">
         <div>
           <h3 className="text-base font-bold text-slate-800">
             {className} &bull; Attendance Register
@@ -274,9 +229,10 @@ export function TeacherAttendanceManager({
             disabled={isPending}
             variant="secondary"
             size="sm"
+            className="text-xs"
           >
             <Clock className="w-3.5 h-3.5 text-emerald-700" />
-            <span>1-Click Batch Check-In</span>
+            <span>Batch Check-In</span>
           </Button>
 
           <Button
@@ -284,9 +240,10 @@ export function TeacherAttendanceManager({
             disabled={isPending}
             variant="outline"
             size="sm"
+            className="text-xs"
           >
             <CheckCheck className="w-3.5 h-3.5 text-teal-700" />
-            <span>1-Click Batch Check-Out</span>
+            <span>Batch Check-Out</span>
           </Button>
 
           <Button
@@ -294,15 +251,136 @@ export function TeacherAttendanceManager({
             disabled={isPending}
             variant="primary"
             size="sm"
+            className="text-xs"
           >
             <Save className="w-3.5 h-3.5" />
-            <span>Save All Logs</span>
+            <span>Save All</span>
           </Button>
         </div>
       </div>
 
-      {/* Attendance Roster Table */}
-      <div className="overflow-x-auto bg-white rounded-2xl border border-slate-200 shadow-sm">
+      {/* MOBILE CARD VIEW (Optimized for smartphones) */}
+      <div className="block md:hidden space-y-3">
+        {students.map((student) => {
+          const state = attendanceState[student.id] || {
+            status: "PRESENT",
+            remarks: "",
+            checkInTime: null,
+            checkOutTime: null,
+          };
+
+          const isAbsentWithoutExcuse = state.status === "ABSENT" && !state.remarks.trim();
+
+          return (
+            <div
+              key={student.id}
+              className={`p-4 bg-white rounded-2xl border transition-all space-y-3 shadow-sm ${
+                isAbsentWithoutExcuse ? "border-rose-300 bg-rose-50/20" : "border-slate-200"
+              }`}
+            >
+              {/* Header */}
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs">
+                    {student.fullName.charAt(0)}
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+                      {student.fullName}
+                      {isAbsentWithoutExcuse && (
+                        <ShieldAlert className="w-3.5 h-3.5 text-rose-500 inline" />
+                      )}
+                    </h4>
+                    <p className="text-[11px] text-slate-400 font-mono">
+                      {student.admissionNumber} &bull; {student.parentName}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Status Selector Grid (4 touch buttons) */}
+              <div className="grid grid-cols-4 gap-1.5">
+                {(["PRESENT", "LATE", "EXCUSED", "ABSENT"] as const).map((st) => {
+                  const isSelected = state.status === st;
+                  let activeClass = "bg-emerald-600 text-white";
+                  if (st === "LATE") activeClass = "bg-amber-600 text-white";
+                  if (st === "EXCUSED") activeClass = "bg-sky-600 text-white";
+                  if (st === "ABSENT") activeClass = "bg-rose-600 text-white";
+
+                  return (
+                    <button
+                      key={st}
+                      type="button"
+                      onClick={() => handleStatusChange(student.id, st)}
+                      className={`py-2 rounded-xl text-xs font-bold transition-all text-center ${
+                        isSelected
+                          ? `${activeClass} shadow-xs`
+                          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      }`}
+                    >
+                      {st === "PRESENT" && "Present"}
+                      {st === "LATE" && "Late"}
+                      {st === "EXCUSED" && "Excused"}
+                      {st === "ABSENT" && "Absent"}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Check-In/Out Timestamps & Instant Buttons */}
+              <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-xs">
+                <div className="space-y-0.5">
+                  <p className="text-slate-600">
+                    <span className="font-semibold text-emerald-700">In:</span>{" "}
+                    <span className="font-mono">{formatTime(state.checkInTime)}</span>
+                  </p>
+                  <p className="text-slate-600">
+                    <span className="font-semibold text-teal-700">Out:</span>{" "}
+                    <span className="font-mono">{formatTime(state.checkOutTime)}</span>
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    onClick={() => handleSingleCheckIn(student.id)}
+                    disabled={isPending}
+                    variant="secondary"
+                    size="sm"
+                    className="py-1 px-2.5 text-[11px]"
+                  >
+                    Check-In
+                  </Button>
+                  <Button
+                    onClick={() => handleSingleCheckOut(student.id)}
+                    disabled={isPending}
+                    variant="outline"
+                    size="sm"
+                    className="py-1 px-2.5 text-[11px]"
+                  >
+                    Check-Out
+                  </Button>
+                </div>
+              </div>
+
+              {/* Remarks */}
+              <input
+                type="text"
+                placeholder={
+                  state.status === "EXCUSED"
+                    ? "Reason for excuse..."
+                    : "Optional teacher remark..."
+                }
+                value={state.remarks}
+                onChange={(e) => handleRemarksChange(student.id, e.target.value)}
+                className="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-slate-50/50"
+              />
+            </div>
+          );
+        })}
+      </div>
+
+      {/* DESKTOP TABLE VIEW (For large screens) */}
+      <div className="hidden md:block overflow-x-auto bg-white rounded-2xl border border-slate-200 shadow-sm">
         <table className="w-full text-left text-sm">
           <thead className="bg-slate-50 border-b border-slate-200 text-xs font-bold uppercase tracking-wider text-slate-600">
             <tr>

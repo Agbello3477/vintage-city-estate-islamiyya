@@ -95,7 +95,7 @@ export function FeeLedgerMatrix({
   return (
     <div className="space-y-4">
       {/* Legend & Summary */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-white rounded-2xl border border-slate-200 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-white rounded-2xl border border-slate-200 shadow-sm">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
             <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
@@ -108,13 +108,89 @@ export function FeeLedgerMatrix({
         </div>
 
         <div className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
-          <ShieldCheck className="w-4 h-4 text-emerald-600" />
-          <span>Standard Monthly Fee: {formatCurrency(5000)} &bull; Academic Year: {currentAcademicYear}</span>
+          <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+          <span>Fee: {formatCurrency(5000)}/mo &bull; Session: {currentAcademicYear}</span>
         </div>
       </div>
 
-      {/* 12-Month Pill Grid Table */}
-      <div className="overflow-x-auto bg-white rounded-2xl border border-slate-200 shadow-sm">
+      {/* MOBILE CARD VIEW (Optimized for smartphones) */}
+      <div className="block lg:hidden space-y-4">
+        {studentsData.map((student) => {
+          const paidMonthsCount = student.months.filter((m) => m.isPaid).length;
+          const totalPaidAmount = student.months.reduce(
+            (acc, m) => acc + (m.isPaid ? m.amountPaid : 0),
+            0
+          );
+
+          return (
+            <div
+              key={student.studentId}
+              className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3"
+            >
+              <div className="flex items-start justify-between border-b border-slate-100 pb-3">
+                <div>
+                  <h4 className="font-bold text-slate-900 text-sm">{student.studentName}</h4>
+                  <p className="text-[11px] text-slate-400 font-mono">
+                    {student.admissionNumber} &bull; {student.className}
+                  </p>
+                  <p className="text-[11px] text-slate-500">Parent: {student.parentName}</p>
+                </div>
+                <div className="text-right">
+                  <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    {paidMonthsCount}/12 Paid
+                  </span>
+                  <p className="text-xs font-bold text-slate-800 mt-1">
+                    {formatCurrency(totalPaidAmount)}
+                  </p>
+                </div>
+              </div>
+
+              {/* 12-Month Touch-Friendly Grid (4 columns x 3 rows) */}
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                  12-Month Payment Status {canEdit && "(Tap to Toggle)"}
+                </p>
+                <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                  {Array.from({ length: 12 }).map((_, idx) => {
+                    const monthIndex = idx + 1;
+                    const monthItem =
+                      student.months.find((m) => m.monthIndex === monthIndex) || {
+                        monthIndex,
+                        isPaid: false,
+                        amountPaid: 0,
+                        paidAt: null,
+                      };
+
+                    return (
+                      <button
+                        key={monthIndex}
+                        type="button"
+                        onClick={() => handleOpenModal(student, monthItem)}
+                        disabled={!canEdit}
+                        className={`p-2 rounded-xl border text-center transition-all flex flex-col items-center justify-center ${
+                          monthItem.isPaid
+                            ? "bg-emerald-50 text-emerald-800 border-emerald-200 active:bg-emerald-100"
+                            : "bg-rose-50 text-rose-800 border-rose-200 active:bg-rose-100"
+                        } ${canEdit ? "cursor-pointer" : "cursor-default"}`}
+                      >
+                        <span className="text-[10px] text-slate-500 font-medium">
+                          {MONTH_SHORT_NAMES[idx]}
+                        </span>
+                        <span className="text-[11px] font-bold">
+                          {monthItem.isPaid ? "PAID" : "DUE"}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* DESKTOP MATRIX VIEW (For large screens) */}
+      <div className="hidden lg:block overflow-x-auto bg-white rounded-2xl border border-slate-200 shadow-sm">
         <table className="w-full text-left text-xs">
           <thead className="bg-slate-50 border-b border-slate-200 font-bold uppercase tracking-wider text-slate-600">
             <tr>
@@ -130,7 +206,10 @@ export function FeeLedgerMatrix({
           <tbody className="divide-y divide-slate-100">
             {studentsData.map((student) => {
               const paidMonthsCount = student.months.filter((m) => m.isPaid).length;
-              const totalPaidAmount = student.months.reduce((acc, m) => acc + (m.isPaid ? m.amountPaid : 0), 0);
+              const totalPaidAmount = student.months.reduce(
+                (acc, m) => acc + (m.isPaid ? m.amountPaid : 0),
+                0
+              );
 
               return (
                 <tr key={student.studentId} className="hover:bg-slate-50/60 transition-colors">
@@ -208,7 +287,11 @@ export function FeeLedgerMatrix({
         <div className="space-y-4">
           <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-600">
             <p>
-              <strong>Month:</strong> {activeModal.monthIndex ? MONTH_SHORT_NAMES[activeModal.monthIndex - 1] : ""} (Month {activeModal.monthIndex})
+              <strong>Month:</strong>{" "}
+              {activeModal.monthIndex
+                ? MONTH_SHORT_NAMES[activeModal.monthIndex - 1]
+                : ""}{" "}
+              (Month {activeModal.monthIndex})
             </p>
             <p>
               <strong>Academic Year:</strong> {activeModal.student?.academicYear}

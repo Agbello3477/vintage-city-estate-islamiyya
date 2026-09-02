@@ -109,191 +109,199 @@ export function ReportCardView({
   return (
     <div className="space-y-4">
       {/* Top Action Bar */}
-      <div className="no-print flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-200 shadow-sm">
+      <div className="no-print flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-white rounded-2xl border border-slate-200 shadow-sm">
         <div>
           <h3 className="font-bold text-slate-800 text-sm">Official Term Progress Report Card</h3>
           <p className="text-xs text-slate-500">Ready for high-resolution printing or PDF export</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button onClick={handlePrint} variant="outline" size="sm">
+          <Button onClick={handlePrint} variant="outline" size="sm" className="flex-1 sm:flex-initial">
             <Printer className="w-4 h-4" />
-            <span>Print Report</span>
+            <span>Print</span>
           </Button>
-          <Button onClick={handleDownloadPDF} variant="primary" size="sm">
+          <Button onClick={handleDownloadPDF} variant="primary" size="sm" className="flex-1 sm:flex-initial">
             <Download className="w-4 h-4" />
-            <span>Export Official PDF</span>
+            <span>Export PDF</span>
           </Button>
         </div>
       </div>
 
       {/* Printable Report Card Container */}
-      <div
-        ref={reportRef}
-        className="bg-white p-8 rounded-2xl border-2 border-emerald-800/40 shadow-glass text-slate-800 max-w-4xl mx-auto space-y-6"
-      >
-        {/* Header with Islamic Motif */}
-        <div className="text-center border-b-2 border-emerald-800 pb-5">
-          <p className="text-xs font-serif text-emerald-800 tracking-widest mb-1 font-semibold">
-            بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
-          </p>
-          <div className="flex items-center justify-center gap-3">
-            <span className="text-3xl">🕌</span>
-            <div>
-              <h1 className="text-2xl font-black tracking-tight text-emerald-950 uppercase">
-                Vintage City Estate Islamiyya
-              </h1>
-              <p className="text-xs font-bold text-emerald-700 tracking-wide uppercase">
-                Knowledge &bull; Faith &bull; Excellence &bull; Character
-              </p>
-            </div>
-          </div>
-          <div className="mt-2 inline-block px-4 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-900">
-            OFFICIAL TERM PROGRESS & TAHFIZ REPORT CARD &bull; {student.academicYear}
-          </div>
-        </div>
-
-        {/* Student Metadata Card */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs">
-          <div>
-            <span className="text-slate-400 font-medium block uppercase text-[10px]">Student Name</span>
-            <span className="font-bold text-slate-900 text-sm">{student.fullName}</span>
-          </div>
-          <div>
-            <span className="text-slate-400 font-medium block uppercase text-[10px]">Admission No.</span>
-            <span className="font-mono font-bold text-slate-900">{student.admissionNumber}</span>
-          </div>
-          <div>
-            <span className="text-slate-400 font-medium block uppercase text-[10px]">Class & Session</span>
-            <span className="font-bold text-emerald-800">{student.className}</span>
-          </div>
-          <div>
-            <span className="text-slate-400 font-medium block uppercase text-[10px]">Parent / Guardian</span>
-            <span className="font-semibold text-slate-800">{student.parentName}</span>
-          </div>
-        </div>
-
-        {/* Academic Performance Table */}
-        <div>
-          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-2 flex items-center gap-1.5">
-            <Award className="w-4 h-4 text-emerald-700" />
-            <span>Islamic Studies & Tahfiz Assessment Ledger</span>
-          </h4>
-
-          <div className="border border-slate-200 rounded-xl overflow-hidden">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-emerald-900 text-white font-bold uppercase tracking-wider text-[11px]">
-                <tr>
-                  <th className="px-4 py-2.5">Subject</th>
-                  <th className="px-4 py-2.5">Latest Assessment / Memorization</th>
-                  <th className="px-3 py-2.5 text-center">Score</th>
-                  <th className="px-3 py-2.5 text-center">Percentage</th>
-                  <th className="px-3 py-2.5 text-center">Grade</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200">
-                {subjectSummary.map((sub) => {
-                  const latest = sub.records[sub.records.length - 1];
-                  return (
-                    <tr key={sub.subject} className="hover:bg-slate-50/50">
-                      <td className="px-4 py-3 font-bold text-slate-900">{sub.subject}</td>
-                      <td className="px-4 py-3 text-slate-600">
-                        <div className="font-medium">{latest?.title || "Continuous Assessment"}</div>
-                        {latest?.teacherFeedback && (
-                          <p className="text-[10px] text-emerald-700 italic mt-0.5">
-                            "{latest.teacherFeedback}"
-                          </p>
-                        )}
-                      </td>
-                      <td className="px-3 py-3 text-center font-mono font-semibold text-slate-800">
-                        {sub.totalScore}/{sub.maxScore}
-                      </td>
-                      <td className="px-3 py-3 text-center font-bold text-emerald-800">
-                        {sub.percentage}%
-                      </td>
-                      <td className="px-3 py-3 text-center">
-                        <span className="inline-block w-6 h-6 leading-6 rounded-md font-bold text-white bg-emerald-800 text-center text-xs">
-                          {sub.grade}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Summary Metric Badges */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="p-4 bg-emerald-50/80 rounded-xl border border-emerald-200">
-            <h5 className="text-xs font-bold text-emerald-900 uppercase tracking-wider mb-2">
-              Attendance & Punctuality
-            </h5>
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-slate-600">Sessions Attended:</span>
-              <span className="font-bold text-slate-800">
-                {attendanceSummary.presentCount} / {attendanceSummary.totalSessions}
-              </span>
-            </div>
-            <div className="flex items-center justify-between text-xs mt-1">
-              <span className="text-slate-600">Attendance Percentage:</span>
-              <span className="font-bold text-emerald-800 text-sm">
-                {attendanceSummary.attendancePercentage}%
-              </span>
-            </div>
-          </div>
-
-          <div className="p-4 bg-amber-50/80 rounded-xl border border-amber-200">
-            <h5 className="text-xs font-bold text-amber-900 uppercase tracking-wider mb-2">
-              Overall Academic Standing
-            </h5>
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-slate-600">Terminal Average:</span>
-              <span className="font-bold text-amber-900 text-base">{overallAverage}%</span>
-            </div>
-            <div className="flex items-center justify-between text-xs mt-1">
-              <span className="text-slate-600">Islamic Evaluation:</span>
-              <span className="font-bold text-emerald-800">
-                {overallAverage >= 80 ? "Mumtaz (Excellent)" : "Jayyid Jiddan (Very Good)"}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Official Signatures & Seal */}
-        <div className="pt-8 border-t border-slate-200 grid grid-cols-3 gap-6 text-center text-xs">
-          <div>
-            <div className="h-10 flex items-end justify-center font-serif text-slate-600 italic">
-              Ustadh Ahmad S.
-            </div>
-            <div className="border-t border-slate-400 pt-1 font-bold text-slate-800">
-              Class Ustadh
-            </div>
-          </div>
-
-          <div>
-            <div className="h-10 flex items-center justify-center">
-              <div className="w-10 h-10 rounded-full border-2 border-emerald-700/60 flex items-center justify-center text-[9px] font-black text-emerald-800 uppercase tracking-tighter transform rotate-[-8deg]">
-                VCE SEAL
+      <div className="overflow-x-auto">
+        <div
+          ref={reportRef}
+          className="bg-white p-4 sm:p-8 rounded-2xl border-2 border-emerald-800/40 shadow-glass text-slate-800 max-w-4xl mx-auto space-y-6 min-w-[320px]"
+        >
+          {/* Header with Islamic Motif */}
+          <div className="text-center border-b-2 border-emerald-800 pb-5">
+            <p className="text-xs font-serif text-emerald-800 tracking-widest mb-1 font-semibold">
+              بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3">
+              <span className="text-2xl sm:text-3xl">🕌</span>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-black tracking-tight text-emerald-950 uppercase">
+                  Vintage City Estate Islamiyya
+                </h1>
+                <p className="text-[10px] sm:text-xs font-bold text-emerald-700 tracking-wide uppercase">
+                  Knowledge &bull; Faith &bull; Excellence &bull; Character
+                </p>
               </div>
             </div>
-            <div className="border-t border-slate-400 pt-1 font-bold text-slate-800">
-              Official Estate Seal
+            <div className="mt-2 inline-block px-3 sm:px-4 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] sm:text-xs font-bold text-emerald-900">
+              OFFICIAL TERM PROGRESS & TAHFIZ REPORT CARD &bull; {student.academicYear}
             </div>
           </div>
 
-          <div>
-            <div className="h-10 flex items-end justify-center font-serif text-slate-600 italic">
-              Alhaji Faruq Al-Mansoor
+          {/* Student Metadata Card */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 sm:p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs">
+            <div>
+              <span className="text-slate-400 font-medium block uppercase text-[10px]">Student Name</span>
+              <span className="font-bold text-slate-900 text-xs sm:text-sm">{student.fullName}</span>
             </div>
-            <div className="border-t border-slate-400 pt-1 font-bold text-slate-800">
-              Committee Chairman
+            <div>
+              <span className="text-slate-400 font-medium block uppercase text-[10px]">Admission No.</span>
+              <span className="font-mono font-bold text-slate-900 text-xs">{student.admissionNumber}</span>
+            </div>
+            <div>
+              <span className="text-slate-400 font-medium block uppercase text-[10px]">Class & Session</span>
+              <span className="font-bold text-emerald-800 text-xs">{student.className}</span>
+            </div>
+            <div>
+              <span className="text-slate-400 font-medium block uppercase text-[10px]">Parent / Guardian</span>
+              <span className="font-semibold text-slate-800 text-xs">{student.parentName}</span>
             </div>
           </div>
-        </div>
 
-        <div className="text-center pt-2 text-[10px] text-slate-400 font-medium border-t border-slate-100">
-          Official Electronic Student Progress Document &bull; Powered by MaSha Tech Innovations
+          {/* Academic Assessment Breakdown */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 border-b border-slate-200 pb-1 flex items-center justify-between">
+              <span>Islamic & Academic Subjects Evaluation</span>
+              <span className="text-[11px] text-slate-400 font-normal">Term Aggregate</span>
+            </h4>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-100 font-bold uppercase text-slate-600 border-b border-slate-200">
+                  <tr>
+                    <th className="px-3 py-2.5">Subject / Field</th>
+                    <th className="px-3 py-2.5 text-center">Score</th>
+                    <th className="px-3 py-2.5 text-center">Percentage</th>
+                    <th className="px-3 py-2.5 text-center">Grade</th>
+                    <th className="px-3 py-2.5">Teacher Remark</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {subjectSummary.map((sub) => {
+                    const latestRemark = sub.records.find((r) => r.teacherFeedback)?.teacherFeedback;
+
+                    return (
+                      <tr key={sub.subject} className="hover:bg-slate-50/80">
+                        <td className="px-3 py-2.5 font-bold text-slate-800">{sub.subject}</td>
+                        <td className="px-3 py-2.5 text-center font-mono">
+                          {sub.totalScore} / {sub.maxScore}
+                        </td>
+                        <td className="px-3 py-2.5 text-center font-bold text-slate-700">
+                          {sub.percentage}%
+                        </td>
+                        <td className="px-3 py-2.5 text-center">
+                          <span
+                            className={`inline-block w-6 py-0.5 rounded text-center font-bold text-[10px] ${
+                              sub.grade === "A"
+                                ? "bg-emerald-100 text-emerald-800"
+                                : sub.grade === "B"
+                                ? "bg-teal-100 text-teal-800"
+                                : sub.grade === "C"
+                                ? "bg-amber-100 text-amber-800"
+                                : "bg-rose-100 text-rose-800"
+                            }`}
+                          >
+                            {sub.grade}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2.5 text-slate-500 italic text-[11px]">
+                          {latestRemark || "Consistent and dedicated effort in class"}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Summary Metric Badges */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="p-3.5 bg-emerald-50/80 rounded-xl border border-emerald-200">
+              <h5 className="text-[11px] font-bold text-emerald-900 uppercase tracking-wider mb-1.5">
+                Attendance & Punctuality
+              </h5>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-600">Sessions Attended:</span>
+                <span className="font-bold text-slate-800">
+                  {attendanceSummary.presentCount} / {attendanceSummary.totalSessions}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-xs mt-1">
+                <span className="text-slate-600">Attendance Percentage:</span>
+                <span className="font-bold text-emerald-800 text-sm">
+                  {attendanceSummary.attendancePercentage}%
+                </span>
+              </div>
+            </div>
+
+            <div className="p-3.5 bg-amber-50/80 rounded-xl border border-amber-200">
+              <h5 className="text-[11px] font-bold text-amber-900 uppercase tracking-wider mb-1.5">
+                Overall Academic Standing
+              </h5>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-600">Terminal Average:</span>
+                <span className="font-bold text-amber-900 text-sm sm:text-base">{overallAverage}%</span>
+              </div>
+              <div className="flex items-center justify-between text-xs mt-1">
+                <span className="text-slate-600">Islamic Evaluation:</span>
+                <span className="font-bold text-emerald-800">
+                  {overallAverage >= 80 ? "Mumtaz (Excellent)" : "Jayyid Jiddan (Very Good)"}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Official Signatures & Seal */}
+          <div className="pt-6 border-t border-slate-200 grid grid-cols-3 gap-3 text-center text-xs">
+            <div>
+              <div className="h-8 flex items-end justify-center font-serif text-slate-600 italic text-[11px]">
+                Ustadh Ahmad S.
+              </div>
+              <div className="border-t border-slate-400 pt-1 font-bold text-slate-800 text-[10px]">
+                Class Ustadh
+              </div>
+            </div>
+
+            <div>
+              <div className="h-8 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full border-2 border-emerald-700/60 flex items-center justify-center text-[8px] font-black text-emerald-800 uppercase tracking-tighter transform rotate-[-8deg]">
+                  VCE SEAL
+                </div>
+              </div>
+              <div className="border-t border-slate-400 pt-1 font-bold text-slate-800 text-[10px]">
+                Official Estate Seal
+              </div>
+            </div>
+
+            <div>
+              <div className="h-8 flex items-end justify-center font-serif text-slate-600 italic text-[11px]">
+                Alhaji Faruq Al-Mansoor
+              </div>
+              <div className="border-t border-slate-400 pt-1 font-bold text-slate-800 text-[10px]">
+                Committee Chairman
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center pt-2 text-[10px] text-slate-400 font-medium border-t border-slate-100">
+            Official Electronic Student Progress Document &bull; Powered by MaSha Tech Innovations
+          </div>
         </div>
       </div>
     </div>

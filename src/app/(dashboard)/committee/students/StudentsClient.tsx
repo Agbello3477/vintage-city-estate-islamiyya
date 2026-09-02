@@ -6,7 +6,16 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { formatDate } from "@/lib/utils";
-import { UserPlus, GraduationCap, Search, Filter, Edit3, UserCheck, CheckCircle } from "lucide-react";
+import {
+  UserPlus,
+  GraduationCap,
+  Search,
+  Filter,
+  Edit3,
+  UserCheck,
+  CheckCircle,
+  School,
+} from "lucide-react";
 import { toast } from "sonner";
 
 interface StudentItem {
@@ -148,29 +157,29 @@ export function StudentsClient({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Top Header & Search Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-5 bg-white rounded-2xl border border-slate-200 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-5 bg-white rounded-2xl border border-slate-200 shadow-sm">
         <div>
-          <h2 className="text-xl font-bold text-slate-800">Student Directory & Admissions</h2>
+          <h2 className="text-lg sm:text-xl font-bold text-slate-800">Student Directory & Admissions</h2>
           <p className="text-xs text-slate-500 mt-0.5">
             Manage student enrollments, assign or change parent guardians, and manage profiles
           </p>
         </div>
 
-        <Button onClick={() => setIsEnrollModalOpen(true)} variant="primary" size="sm">
+        <Button onClick={() => setIsEnrollModalOpen(true)} variant="primary" size="sm" className="text-xs">
           <UserPlus className="w-4 h-4" />
           <span>Enroll New Student</span>
         </Button>
       </div>
 
       {/* Filter Row */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-white rounded-2xl border border-slate-200 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 sm:p-4 bg-white rounded-2xl border border-slate-200 shadow-sm">
         <div className="relative flex-1 max-w-sm">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Search by student name, admission no, parent..."
+            placeholder="Search student, admission no, parent..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full text-xs pl-9 pr-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -178,11 +187,11 @@ export function StudentsClient({
         </div>
 
         <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-slate-400" />
+          <Filter className="w-4 h-4 text-slate-400 shrink-0" />
           <select
             value={classFilter}
             onChange={(e) => setClassFilter(e.target.value)}
-            className="text-xs px-3 py-2 rounded-xl border border-slate-200 bg-white font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="text-xs px-3 py-2 rounded-xl border border-slate-200 bg-white font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 w-full sm:w-auto"
           >
             <option value="ALL">All Classes</option>
             {classes.map((c) => (
@@ -194,8 +203,64 @@ export function StudentsClient({
         </div>
       </div>
 
-      {/* Students Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      {/* MOBILE CARD VIEW */}
+      <div className="block lg:hidden space-y-3">
+        {filteredStudents.map((s) => (
+          <div key={s.id} className="p-4 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-3">
+            <div className="flex items-start justify-between">
+              <div>
+                <h4 className="font-bold text-slate-900 text-sm">{s.fullName}</h4>
+                <p className="text-[11px] font-mono font-bold text-emerald-800">{s.admissionNumber}</p>
+                <p className="text-xs text-slate-600 font-medium mt-0.5">Class: {s.class.name}</p>
+              </div>
+              <span
+                className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold ${
+                  s.gender === "MALE"
+                    ? "bg-sky-50 text-sky-800 border border-sky-200"
+                    : "bg-purple-50 text-purple-800 border border-purple-200"
+                }`}
+              >
+                {s.gender}
+              </span>
+            </div>
+
+            {/* Parent & Metrics Card */}
+            <div className="p-3 bg-slate-50 rounded-xl space-y-2 text-xs">
+              <div className="flex items-center gap-1.5">
+                <UserCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span className="font-semibold text-slate-800">{s.parent.fullName}</span>
+                <span className="text-[10px] text-slate-400 font-mono">({s.parent.phoneNumber || s.parent.email})</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-200/60 text-[11px]">
+                <div>
+                  <span className="text-slate-400 block text-[10px] uppercase font-bold">Attendance</span>
+                  <span className="font-bold text-slate-700">{s._count.attendance} Sessions</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[10px] uppercase font-bold">Academics</span>
+                  <span className="font-bold text-emerald-800">{s._count.academicRecords} Records</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Edit Button */}
+            <div className="flex justify-end pt-1 border-t border-slate-100">
+              <Button
+                onClick={() => handleOpenEdit(s)}
+                variant="outline"
+                size="sm"
+                className="w-full text-xs py-1.5 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>Edit Profile / Reassign Parent</span>
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* DESKTOP TABLE VIEW */}
+      <div className="hidden lg:block bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 border-b border-slate-200 font-bold uppercase tracking-wider text-slate-600">
