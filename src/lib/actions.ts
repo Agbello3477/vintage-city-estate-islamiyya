@@ -578,6 +578,66 @@ export async function batchAttendanceAction(params: {
   return { success: true };
 }
 
+export async function batchSaveAttendanceAction(params: {
+  classId: string;
+  sessionDate: string;
+  records: Array<{
+    studentId: string;
+    status: "PRESENT" | "ABSENT" | "LATE" | "EXCUSED";
+    checkInTime?: string | null;
+    checkOutTime?: string | null;
+    remarks?: string;
+  }>;
+}) {
+  const session = await getSession();
+  if (!session || (session.role !== "COMMITTEE" && session.role !== "TEACHER")) {
+    return { error: "Unauthorized." };
+  }
+
+  for (const item of params.records) {
+    const checkIn = item.checkInTime ? new Date(item.checkInTime) : null;
+    const checkOut = item.checkOutTime ? new Date(item.checkOutTime) : null;
+
+    await db.attendance.upsert({
+      where: {
+        student_session_unique: {
+          studentId: item.studentId,
+          sessionDate: params.sessionDate,
+        },
+      },
+      create: {
+        studentId: item.studentId,
+        classId: params.classId,
+        sessionDate: params.sessionDate,
+        status: item.status,
+        checkInTime: checkIn,
+        checkOutTime: checkOut,
+        markedById: session.id,
+        remarks: item.remarks || null,
+      },
+      update: {
+        status: item.status,
+        checkInTime: checkIn,
+        checkOutTime: checkOut,
+        markedById: session.id,
+        remarks: item.remarks !== undefined ? item.remarks : null,
+      },
+    });
+  }
+
+  await recordAuditLog({
+    action: "BATCH_ATTENDANCE_SAVED",
+    entityType: "ATTENDANCE",
+    entityId: params.classId,
+    details: `${session.fullName} saved batch attendance for ${params.records.length} students on ${params.sessionDate}`,
+  });
+
+  revalidatePath("/teacher/attendance");
+  revalidatePath("/committee/attendance");
+  revalidatePath("/parent/attendance");
+  return { success: true };
+}
+
 // --- ACADEMIC & TAHFIZ GRADES ACTIONS ---
 
 export async function createAcademicRecordAction(formData: FormData) {
