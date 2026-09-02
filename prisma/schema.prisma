@@ -1,0 +1,184 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                      String               @id @default(uuid())
+  fullName                String
+  email                   String               @unique
+  phoneNumber             String?              @unique
+  passwordHash            String
+  role                    String               @default("PARENT") // COMMITTEE, TEACHER, PARENT
+  isActive                Boolean              @default(true)
+  createdAt               DateTime             @default(now())
+  updatedAt               DateTime             @updatedAt
+
+  classesTaught           Class[]              @relation("TeacherClasses")
+  children                Student[]            @relation("ParentStudents")
+  markedAttendance        Attendance[]         @relation("MarkedByAttendance")
+  gradedAcademicRecords   AcademicRecord[]     @relation("GradedByRecords")
+  recordedFeePayments     StudentFeePayment[]  @relation("RecordedByFees")
+  submittedTickets        FeedbackTicket[]     @relation("ParentTickets")
+  respondedTickets        FeedbackTicket[]     @relation("CommitteeResponses")
+  auditLogs               AuditLog[]           @relation("UserAuditLogs")
+
+  @@index([role])
+  @@index([email])
+}
+
+model Class {
+  id              String           @id @default(uuid())
+  name            String
+  academicYear    String
+  teacherId       String?
+  teacher         User?            @relation("TeacherClasses", fields: [teacherId], references: [id], onDelete: SetNull)
+  createdAt       DateTime         @default(now())
+
+  students        Student[]
+  attendance      Attendance[]
+  academicRecords AcademicRecord[]
+
+  @@index([teacherId])
+  @@index([academicYear])
+}
+
+model Student {
+  id               String               @id @default(uuid())
+  admissionNumber  String               @unique
+  fullName         String
+  gender           String               // MALE, FEMALE
+  dateOfBirth      DateTime?
+  classId          String
+  parentId         String
+  createdAt        DateTime             @default(now())
+
+  class            Class                @relation(fields: [classId], references: [id], onDelete: Restrict)
+  parent           User                 @relation("ParentStudents", fields: [parentId], references: [id], onDelete: Restrict)
+  attendance       Attendance[]
+  academicRecords  AcademicRecord[]
+  feePayments      StudentFeePayment[]
+  feedbackTickets  FeedbackTicket[]
+
+  @@index([classId])
+  @@index([parentId])
+  @@index([admissionNumber])
+}
+
+model Attendance {
+  id            String    @id @default(uuid())
+  studentId     String
+  classId       String
+  sessionDate   String    // Format: YYYY-MM-DD
+  checkInTime   DateTime?
+  checkOutTime  DateTime?
+  status        String    @default("PRESENT") // PRESENT, ABSENT, LATE, EXCUSED
+  markedById    String?
+  remarks       String?
+  createdAt     DateTime  @default(now())
+
+  student       Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  class         Class     @relation(fields: [classId], references: [id], onDelete: Cascade)
+  markedBy      User?     @relation("MarkedByAttendance", fields: [markedById], references: [id], onDelete: SetNull)
+
+  @@unique([studentId, sessionDate], name: "student_session_unique")
+  @@index([studentId, sessionDate])
+  @@index([classId, sessionDate])
+}
+
+model AcademicRecord {
+  id              String   @id @default(uuid())
+  studentId       String
+  classId         String
+  subject         String   // Tahfiz/Quran, Hadith, Fiqh, Arabic, General Islamiyya
+  title           String
+  type            String   // QUIZ, TEST, MIDTERM, FINAL_EXAM, MEMORIZATION_QURAN
+  score           Float
+  totalObtainable Float
+  assessmentDate  DateTime
+  teacherFeedback String?
+  gradedById      String?
+  createdAt       DateTime @default(now())
+
+  student         Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  class           Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  gradedBy        User?    @relation("GradedByRecords", fields: [gradedById], references: [id], onDelete: SetNull)
+
+  @@index([studentId])
+  @@index([classId])
+  @@index([subject])
+}
+
+model StudentFeePayment {
+  id           String    @id @default(uuid())
+  studentId    String
+  academicYear String
+  monthIndex   Int       // 1 to 12
+  isPaid       Boolean   @default(false)
+  amountPaid   Float     @default(0.00)
+  paidAt       DateTime?
+  recordedById String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  student      Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  recordedBy   User?     @relation("RecordedByFees", fields: [recordedById], references: [id], onDelete: SetNull)
+
+  @@unique([studentId, academicYear, monthIndex], name: "unique_student_month_fee")
+  @@index([studentId, academicYear])
+}
+
+model FeedbackTicket {
+  id                String    @id @default(uuid())
+  parentId          String
+  studentId         String?
+  category          String    @default("ACADEMIC") // ACADEMIC, FACILITIES, WELFARE, FEES
+  title             String
+  message           String
+  status            String    @default("OPEN") // OPEN, IN_REVIEW, RESOLVED
+  committeeResponse String?
+  respondedById     String?
+  respondedAt       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  parent            User      @relation("ParentTickets", fields: [parentId], references: [id], onDelete: Cascade)
+  student           Student?  @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  respondedBy       User?     @relation("CommitteeResponses", fields: [respondedById], references: [id], onDelete: SetNull)
+
+  @@index([parentId])
+  @@index([status])
+  @@index([category])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?
+  userName   String?
+  userRole   String?
+  action     String   // e.g. GRADE_MUTATION, FEE_STATUS_OVERRIDE, etc.
+  entityType String   // e.g. ACADEMIC_RECORD, FEE_PAYMENT, USER, etc.
+  entityId   String?
+  details    String
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  user       User?    @relation("UserAuditLogs", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model RevokedToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  revokedAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@index([token])
+}
