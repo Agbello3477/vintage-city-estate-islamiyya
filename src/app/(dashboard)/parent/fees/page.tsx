@@ -16,22 +16,31 @@ export default async function ParentFeesPage() {
     },
   });
 
-  const formattedRows: StudentFeeRow[] = children.map((s) => ({
-    studentId: s.id,
-    studentName: s.fullName,
-    admissionNumber: s.admissionNumber,
-    className: s.class.name,
-    academicYear: s.class.academicYear || "2025/2026",
-    parentName: s.parent.fullName,
-    parentPhone: s.parent.phoneNumber,
-    months: s.feePayments.map((p) => ({
-      id: p.id,
-      monthIndex: p.monthIndex,
-      isPaid: p.isPaid,
-      amountPaid: p.amountPaid,
-      paidAt: p.paidAt ? p.paidAt.toISOString() : null,
-    })),
-  }));
+  const formattedRows: StudentFeeRow[] = children.map((s) => {
+    const paymentMap = new Map(s.feePayments.map((p) => [p.monthIndex, p]));
+    const months = Array.from({ length: 12 }, (_, i) => {
+      const monthIndex = i + 1;
+      const payment = paymentMap.get(monthIndex);
+      return {
+        id: payment?.id,
+        monthIndex,
+        isPaid: payment?.isPaid ?? false,
+        amountPaid: payment?.amountPaid ?? (payment?.isPaid ? 5000 : 0),
+        paidAt: payment?.paidAt ? payment.paidAt.toISOString() : null,
+      };
+    });
+
+    return {
+      studentId: s.id,
+      studentName: s.fullName,
+      admissionNumber: s.admissionNumber,
+      className: s.class?.name || "Unassigned",
+      academicYear: s.class?.academicYear || "2025/2026",
+      parentName: s.parent?.fullName || "N/A",
+      parentPhone: s.parent?.phoneNumber || null,
+      months,
+    };
+  });
 
   return (
     <div className="space-y-6">

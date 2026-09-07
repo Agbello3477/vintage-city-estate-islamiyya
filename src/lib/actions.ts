@@ -720,7 +720,7 @@ export async function createAcademicRecordAction(formData: FormData) {
 
 export async function toggleFeePaymentAction(data: {
   studentId: string;
-  academicYear: string;
+  academicYear?: string;
   monthIndex: number;
   isPaid: boolean;
   amountPaid?: number;
@@ -730,58 +730,91 @@ export async function toggleFeePaymentAction(data: {
     return { error: "Unauthorized: Only Committee and Teachers can modify fee records." };
   }
 
-  const validation = feePaymentToggleSchema.safeParse({
-    studentId: data.studentId,
-    academicYear: data.academicYear,
-    monthIndex: data.monthIndex,
-    isPaid: data.isPaid,
-    amountPaid: data.amountPaid ?? 5000,
-  });
-
-  if (!validation.success) {
-    return { error: validation.error.errors[0]?.message };
+  if (!data.studentId) {
+    return { error: "Student ID is required." };
   }
 
   const student = await db.student.findUnique({
     where: { id: data.studentId },
+    include: { class: true },
   });
 
-  const updated = await db.studentFeePayment.upsert({
-    where: {
-      unique_student_month_fee: {
-        studentId: data.studentId,
-        academicYear: data.academicYear,
-        monthIndex: data.monthIndex,
+  if (!student) {
+    return { error: "Student record not found." };
+  }
+
+  const academicYear =
+    data.academicYear && data.academicYear.trim().length >= 4
+      ? data.academicYear.trim()
+      : student.class?.academicYear || "2025/2026";
+
+  const monthIndex = Number(data.monthIndex);
+  if (!Number.isInteger(monthIndex) || monthIndex < 1 || monthIndex > 12) {
+    return { error: "Invalid month index (must be between 1 and 12)." };
+  }
+
+  const isPaid = Boolean(data.isPaid);
+  const amountPaid = isPaid
+    ? Number.isFinite(Number(data.amountPaid)) && Number(data.amountPaid) >= 0
+      ? Number(data.amountPaid)
+      : 5000
+    : 0;
+
+  const validation = feePaymentToggleSchema.safeParse({
+    studentId: data.studentId,
+    academicYear,
+    monthIndex,
+    isPaid,
+    amountPaid,
+  });
+
+  if (!validation.success) {
+    return { error: validation.error.errors[0]?.message || "Validation failed" };
+  }
+
+  try {
+    const updated = await db.studentFeePayment.upsert({
+      where: {
+        unique_student_month_fee: {
+          studentId: data.studentId,
+          academicYear,
+          monthIndex,
+        },
       },
-    },
-    create: {
-      studentId: data.studentId,
-      academicYear: data.academicYear,
-      monthIndex: data.monthIndex,
-      isPaid: data.isPaid,
-      amountPaid: data.isPaid ? (data.amountPaid ?? 5000) : 0,
-      paidAt: data.isPaid ? new Date() : null,
-      recordedById: session.id,
-    },
-    update: {
-      isPaid: data.isPaid,
-      amountPaid: data.isPaid ? (data.amountPaid ?? 5000) : 0,
-      paidAt: data.isPaid ? new Date() : null,
-      recordedById: session.id,
-    },
-  });
+      create: {
+        studentId: data.studentId,
+        academicYear,
+        monthIndex,
+        isPaid,
+        amountPaid,
+        paidAt: isPaid ? new Date() : null,
+        recordedById: session.id,
+      },
+      update: {
+        isPaid,
+        amountPaid,
+        paidAt: isPaid ? new Date() : null,
+        recordedById: session.id,
+      },
+    });
 
-  await recordAuditLog({
-    action: "FEE_STATUS_OVERRIDE",
-    entityType: "FEE_PAYMENT",
-    entityId: updated.id,
-    details: `${session.fullName} marked Month ${data.monthIndex} fee for ${student?.fullName || "Student"} as ${data.isPaid ? "PAID (₦" + updated.amountPaid + ")" : "UNPAID / DUE"}`,
-  });
+    await recordAuditLog({
+      action: "FEE_STATUS_OVERRIDE",
+      entityType: "FEE_PAYMENT",
+      entityId: updated.id,
+      details: `${session.fullName} marked Month ${monthIndex} fee for ${student.fullName} as ${
+        isPaid ? "PAID (₦" + updated.amountPaid.toLocaleString() + ")" : "UNPAID / DUE"
+      }`,
+    });
 
-  revalidatePath("/teacher/fees");
-  revalidatePath("/committee/fees");
-  revalidatePath("/parent/fees");
-  return { success: true, updated };
+    revalidatePath("/teacher/fees");
+    revalidatePath("/committee/fees");
+    revalidatePath("/parent/fees");
+    return { success: true, updated };
+  } catch (err: any) {
+    console.error("Error updating fee payment record:", err);
+    return { error: err?.message || "Failed to update fee record in database." };
+  }
 }
 
 // --- FEEDBACK & COMPLAINTS ACTIONS ---

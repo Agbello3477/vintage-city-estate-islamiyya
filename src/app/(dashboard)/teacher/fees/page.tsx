@@ -5,6 +5,7 @@ import { FeeLedgerMatrix, StudentFeeRow } from "@/components/fees/FeeLedgerMatri
 export default async function TeacherFeesPage() {
   const user = await requireRole(["TEACHER", "COMMITTEE"]);
 
+  // Fetch assigned classes, or fallback to all students if none assigned
   const assignedClasses = await db.class.findMany({
     where: user.role === "COMMITTEE" ? {} : { teacherId: user.id },
     include: {
@@ -19,7 +20,7 @@ export default async function TeacherFeesPage() {
     },
   });
 
-  const students = assignedClasses.flatMap((c) =>
+  let rawStudents = assignedClasses.flatMap((c) =>
     c.students.map((s) => ({
       ...s,
       className: c.name,
@@ -27,22 +28,49 @@ export default async function TeacherFeesPage() {
     }))
   );
 
-  const formattedRows: StudentFeeRow[] = students.map((s) => ({
-    studentId: s.id,
-    studentName: s.fullName,
-    admissionNumber: s.admissionNumber,
-    className: s.className,
-    academicYear: s.academicYear || "2025/2026",
-    parentName: s.parent.fullName,
-    parentPhone: s.parent.phoneNumber,
-    months: s.feePayments.map((p) => ({
-      id: p.id,
-      monthIndex: p.monthIndex,
-      isPaid: p.isPaid,
-      amountPaid: p.amountPaid,
-      paidAt: p.paidAt ? p.paidAt.toISOString() : null,
-    })),
-  }));
+  if (rawStudents.length === 0) {
+    const allStudents = await db.student.findMany({
+      orderBy: { fullName: "asc" },
+      include: {
+        class: true,
+        parent: true,
+        feePayments: {
+          orderBy: { monthIndex: "asc" },
+        },
+      },
+    });
+    rawStudents = allStudents.map((s) => ({
+      ...s,
+      className: s.class?.name || "Unassigned",
+      academicYear: s.class?.academicYear || "2025/2026",
+    }));
+  }
+
+  const formattedRows: StudentFeeRow[] = rawStudents.map((s) => {
+    const paymentMap = new Map(s.feePayments.map((p) => [p.monthIndex, p]));
+    const months = Array.from({ length: 12 }, (_, i) => {
+      const monthIndex = i + 1;
+      const payment = paymentMap.get(monthIndex);
+      return {
+        id: payment?.id,
+        monthIndex,
+        isPaid: payment?.isPaid ?? false,
+        amountPaid: payment?.amountPaid ?? (payment?.isPaid ? 5000 : 0),
+        paidAt: payment?.paidAt ? payment.paidAt.toISOString() : null,
+      };
+    });
+
+    return {
+      studentId: s.id,
+      studentName: s.fullName,
+      admissionNumber: s.admissionNumber,
+      className: s.className,
+      academicYear: s.academicYear || "2025/2026",
+      parentName: s.parent?.fullName || "N/A",
+      parentPhone: s.parent?.phoneNumber || null,
+      months,
+    };
+  });
 
   return (
     <div className="space-y-6">

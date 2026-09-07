@@ -1,11 +1,22 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import React, { useState, useTransition, useMemo } from "react";
 import { MONTH_SHORT_NAMES, formatCurrency, formatDate } from "@/lib/utils";
 import { toggleFeePaymentAction } from "@/lib/actions";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
-import { CheckCircle, AlertCircle, Receipt, CreditCard, ShieldCheck, Download, FileSpreadsheet } from "lucide-react";
+import {
+  CheckCircle,
+  AlertCircle,
+  Receipt,
+  CreditCard,
+  ShieldCheck,
+  Download,
+  FileSpreadsheet,
+  Search,
+  Filter,
+  Users,
+} from "lucide-react";
 import { exportFeeLedgerToExcel, exportFeeLedgerToCSV } from "@/lib/export-utils";
 import { toast } from "sonner";
 
@@ -40,6 +51,26 @@ export function FeeLedgerMatrix({
   currentAcademicYear = "2025/2026",
 }: FeeLedgerMatrixProps) {
   const [isPending, startTransition] = useTransition();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedClass, setSelectedClass] = useState("ALL");
+
+  // Distinct classes for filter dropdown
+  const uniqueClasses = useMemo(() => {
+    const classes = Array.from(new Set(studentsData.map((s) => s.className).filter(Boolean)));
+    return classes.sort();
+  }, [studentsData]);
+
+  // Filtered student list
+  const filteredStudents = useMemo(() => {
+    return studentsData.filter((s) => {
+      const matchSearch =
+        s.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        s.admissionNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        s.parentName.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchClass = selectedClass === "ALL" || s.className === selectedClass;
+      return matchSearch && matchClass;
+    });
+  }, [studentsData, searchTerm, selectedClass]);
 
   // Selected fee item for editing modal
   const [activeModal, setActiveModal] = useState<{
@@ -67,54 +98,81 @@ export function FeeLedgerMatrix({
   const handleTogglePayment = (isPaid: boolean) => {
     if (!activeModal.student || !activeModal.monthIndex) return;
 
+    const safeAmount = isPaid
+      ? Number.isFinite(Number(customAmount)) && Number(customAmount) >= 0
+        ? Number(customAmount)
+        : 5000
+      : 0;
+
     startTransition(async () => {
       try {
         const res = await toggleFeePaymentAction({
           studentId: activeModal.student!.studentId,
-          academicYear: activeModal.student!.academicYear || currentAcademicYear,
+          academicYear: activeModal.student!.academicYear || currentAcademicYear || "2025/2026",
           monthIndex: activeModal.monthIndex!,
           isPaid,
-          amountPaid: isPaid ? customAmount : 0,
+          amountPaid: safeAmount,
         });
 
-        if (res.error) {
+        if (res?.error) {
           toast.error(res.error);
         } else {
           toast.success(
             `Month ${activeModal.monthIndex} marked as ${
-              isPaid ? "PAID" : "UNPAID / DUE"
-            } with audit log recorded`
+              isPaid ? `PAID (₦${safeAmount.toLocaleString()})` : "UNPAID / DUE"
+            }`
           );
           setActiveModal({ isOpen: false });
         }
       } catch (err: any) {
-        toast.error(err.message || "Failed to update fee record");
+        toast.error(err?.message || "Failed to update fee record");
       }
     });
   };
 
   return (
     <div className="space-y-4">
-      {/* Legend & Export Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-white rounded-2xl border border-slate-200 shadow-sm">
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
-            <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
-            <span>Paid (Cleared)</span>
+      {/* Search, Filters & Export Actions Bar */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-4 bg-white rounded-2xl border border-slate-200 shadow-sm">
+        {/* Search and Class Filter */}
+        <div className="flex flex-wrap items-center gap-2.5 flex-1 max-w-xl">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search by student name, admission no..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
+            />
           </div>
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
-            <span className="w-3 h-3 rounded-full bg-rose-500"></span>
-            <span>Unpaid / Due (Pending)</span>
-          </div>
+
+          {uniqueClasses.length > 0 && (
+            <div className="relative">
+              <select
+                value={selectedClass}
+                onChange={(e) => setSelectedClass(e.target.value)}
+                className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium text-slate-700 cursor-pointer"
+              >
+                <option value="ALL">All Classes ({studentsData.length})</option>
+                {uniqueClasses.map((cls) => (
+                  <option key={cls} value={cls}>
+                    {cls}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
+        {/* Export and Status Info */}
         <div className="flex flex-wrap items-center gap-2">
           {canEdit && (
             <>
               <button
                 type="button"
                 onClick={() => {
-                  exportFeeLedgerToExcel(studentsData);
+                  exportFeeLedgerToExcel(filteredStudents);
                   toast.success("Excel Fee Ledger exported successfully!");
                 }}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold transition-all shadow-xs"
@@ -126,7 +184,7 @@ export function FeeLedgerMatrix({
               <button
                 type="button"
                 onClick={() => {
-                  exportFeeLedgerToCSV(studentsData);
+                  exportFeeLedgerToCSV(filteredStudents);
                   toast.success("CSV Fee Ledger exported successfully!");
                 }}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-bold transition-all shadow-xs"
@@ -139,14 +197,47 @@ export function FeeLedgerMatrix({
 
           <div className="text-xs text-slate-500 font-medium flex items-center gap-1.5 pl-2 border-l border-slate-200">
             <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>Fee: {formatCurrency(5000)}/mo &bull; Session: {currentAcademicYear}</span>
+            <span>Standard Fee: {formatCurrency(5000)}/mo &bull; Session: {currentAcademicYear}</span>
           </div>
         </div>
       </div>
 
+      {/* Legend & Count Info */}
+      <div className="flex items-center justify-between px-2 text-xs text-slate-500 font-medium">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            <span>Paid (Cleared)</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+            <span>Unpaid / Due (Pending)</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5 text-slate-600 font-semibold">
+          <Users className="w-3.5 h-3.5 text-slate-400" />
+          <span>
+            Showing {filteredStudents.length} of {studentsData.length} students
+          </span>
+        </div>
+      </div>
+
+      {/* Empty State */}
+      {filteredStudents.length === 0 && (
+        <div className="p-8 text-center bg-white rounded-2xl border border-slate-200 shadow-sm">
+          <AlertCircle className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+          <p className="text-sm font-bold text-slate-700">No students found</p>
+          <p className="text-xs text-slate-500 mt-1">
+            {searchTerm
+              ? `No student matching "${searchTerm}". Try adjusting your search.`
+              : "No students registered in this class yet."}
+          </p>
+        </div>
+      )}
+
       {/* MOBILE CARD VIEW (Optimized for smartphones) */}
       <div className="block lg:hidden space-y-4">
-        {studentsData.map((student) => {
+        {filteredStudents.map((student) => {
           const paidMonthsCount = student.months.filter((m) => m.isPaid).length;
           const totalPaidAmount = student.months.reduce(
             (acc, m) => acc + (m.isPaid ? m.amountPaid : 0),
@@ -182,37 +273,26 @@ export function FeeLedgerMatrix({
                   12-Month Payment Status {canEdit && "(Tap to Toggle)"}
                 </p>
                 <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                  {Array.from({ length: 12 }).map((_, idx) => {
-                    const monthIndex = idx + 1;
-                    const monthItem =
-                      student.months.find((m) => m.monthIndex === monthIndex) || {
-                        monthIndex,
-                        isPaid: false,
-                        amountPaid: 0,
-                        paidAt: null,
-                      };
-
-                    return (
-                      <button
-                        key={monthIndex}
-                        type="button"
-                        onClick={() => handleOpenModal(student, monthItem)}
-                        disabled={!canEdit}
-                        className={`p-2 rounded-xl border text-center transition-all flex flex-col items-center justify-center ${
-                          monthItem.isPaid
-                            ? "bg-emerald-50 text-emerald-800 border-emerald-200 active:bg-emerald-100"
-                            : "bg-rose-50 text-rose-800 border-rose-200 active:bg-rose-100"
-                        } ${canEdit ? "cursor-pointer" : "cursor-default"}`}
-                      >
-                        <span className="text-[10px] text-slate-500 font-medium">
-                          {MONTH_SHORT_NAMES[idx]}
-                        </span>
-                        <span className="text-[11px] font-bold">
-                          {monthItem.isPaid ? "PAID" : "DUE"}
-                        </span>
-                      </button>
-                    );
-                  })}
+                  {student.months.map((monthItem, idx) => (
+                    <button
+                      key={monthItem.monthIndex}
+                      type="button"
+                      onClick={() => handleOpenModal(student, monthItem)}
+                      disabled={!canEdit}
+                      className={`p-2 rounded-xl border text-center transition-all flex flex-col items-center justify-center ${
+                        monthItem.isPaid
+                          ? "bg-emerald-50 text-emerald-800 border-emerald-200 active:bg-emerald-100"
+                          : "bg-rose-50 text-rose-800 border-rose-200 active:bg-rose-100"
+                      } ${canEdit ? "cursor-pointer" : "cursor-default"}`}
+                    >
+                      <span className="text-[10px] text-slate-500 font-medium">
+                        {MONTH_SHORT_NAMES[idx]}
+                      </span>
+                      <span className="text-[11px] font-bold">
+                        {monthItem.isPaid ? "PAID" : "DUE"}
+                      </span>
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
@@ -221,54 +301,45 @@ export function FeeLedgerMatrix({
       </div>
 
       {/* DESKTOP MATRIX VIEW (For large screens) */}
-      <div className="hidden lg:block overflow-x-auto bg-white rounded-2xl border border-slate-200 shadow-sm">
-        <table className="w-full text-left text-xs">
-          <thead className="bg-slate-50 border-b border-slate-200 font-bold uppercase tracking-wider text-slate-600">
-            <tr>
-              <th className="px-4 py-3.5 min-w-[200px]">Student Details</th>
-              {MONTH_SHORT_NAMES.map((m, idx) => (
-                <th key={m} className="px-2 py-3.5 text-center min-w-[64px]">
-                  M{idx + 1} ({m})
-                </th>
-              ))}
-              <th className="px-4 py-3.5 text-right">Summary</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {studentsData.map((student) => {
-              const paidMonthsCount = student.months.filter((m) => m.isPaid).length;
-              const totalPaidAmount = student.months.reduce(
-                (acc, m) => acc + (m.isPaid ? m.amountPaid : 0),
-                0
-              );
+      {filteredStudents.length > 0 && (
+        <div className="hidden lg:block overflow-x-auto bg-white rounded-2xl border border-slate-200 shadow-sm">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-slate-50 border-b border-slate-200 font-bold uppercase tracking-wider text-slate-600">
+              <tr>
+                <th className="px-4 py-3.5 min-w-[200px]">Student Details</th>
+                {MONTH_SHORT_NAMES.map((m, idx) => (
+                  <th key={m} className="px-2 py-3.5 text-center min-w-[64px]">
+                    M{idx + 1} ({m})
+                  </th>
+                ))}
+                <th className="px-4 py-3.5 text-right">Summary</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredStudents.map((student) => {
+                const paidMonthsCount = student.months.filter((m) => m.isPaid).length;
+                const totalPaidAmount = student.months.reduce(
+                  (acc, m) => acc + (m.isPaid ? m.amountPaid : 0),
+                  0
+                );
 
-              return (
-                <tr key={student.studentId} className="hover:bg-slate-50/60 transition-colors">
-                  <td className="px-4 py-3.5">
-                    <div className="font-semibold text-slate-800 text-sm">
-                      {student.studentName}
-                    </div>
-                    <div className="text-[11px] text-slate-400 font-mono">
-                      {student.admissionNumber} &bull; {student.className}
-                    </div>
-                    <div className="text-[11px] text-slate-500">
-                      Parent: {student.parentName}
-                    </div>
-                  </td>
+                return (
+                  <tr key={student.studentId} className="hover:bg-slate-50/60 transition-colors">
+                    <td className="px-4 py-3.5">
+                      <div className="font-semibold text-slate-800 text-sm">
+                        {student.studentName}
+                      </div>
+                      <div className="text-[11px] text-slate-400 font-mono">
+                        {student.admissionNumber} &bull; {student.className}
+                      </div>
+                      <div className="text-[11px] text-slate-500">
+                        Parent: {student.parentName}
+                      </div>
+                    </td>
 
-                  {/* 12 Months Pills */}
-                  {Array.from({ length: 12 }).map((_, idx) => {
-                    const monthIndex = idx + 1;
-                    const monthItem =
-                      student.months.find((m) => m.monthIndex === monthIndex) || {
-                        monthIndex,
-                        isPaid: false,
-                        amountPaid: 0,
-                        paidAt: null,
-                      };
-
-                    return (
-                      <td key={monthIndex} className="px-1.5 py-3 text-center">
+                    {/* 12 Months Pills */}
+                    {student.months.map((monthItem, idx) => (
+                      <td key={monthItem.monthIndex} className="px-1.5 py-3 text-center">
                         <button
                           type="button"
                           onClick={() => handleOpenModal(student, monthItem)}
@@ -289,23 +360,23 @@ export function FeeLedgerMatrix({
                           {monthItem.isPaid ? "PAID" : "DUE"}
                         </button>
                       </td>
-                    );
-                  })}
+                    ))}
 
-                  <td className="px-4 py-3.5 text-right">
-                    <div className="font-bold text-slate-800 text-xs">
-                      {paidMonthsCount}/12 Months
-                    </div>
-                    <div className="text-[11px] text-emerald-700 font-semibold">
-                      {formatCurrency(totalPaidAmount)}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+                    <td className="px-4 py-3.5 text-right">
+                      <div className="font-bold text-slate-800 text-xs">
+                        {paidMonthsCount}/12 Months
+                      </div>
+                      <div className="text-[11px] text-emerald-700 font-semibold">
+                        {formatCurrency(totalPaidAmount)}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Edit Payment Modal */}
       <Modal
@@ -316,27 +387,42 @@ export function FeeLedgerMatrix({
         maxWidth="md"
       >
         <div className="space-y-4">
-          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-600">
-            <p>
-              <strong>Month:</strong>{" "}
-              {activeModal.monthIndex
-                ? MONTH_SHORT_NAMES[activeModal.monthIndex - 1]
-                : ""}{" "}
-              (Month {activeModal.monthIndex})
-            </p>
-            <p>
-              <strong>Academic Year:</strong> {activeModal.student?.academicYear}
-            </p>
-            <p>
-              <strong>Current Status:</strong>{" "}
+          <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1.5 text-slate-700">
+            <div className="flex justify-between">
+              <span className="text-slate-500">Student:</span>
+              <span className="font-bold text-slate-800">{activeModal.student?.studentName}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Class:</span>
+              <span className="font-semibold text-slate-800">{activeModal.student?.className}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Month:</span>
+              <span className="font-bold text-slate-800">
+                {activeModal.monthIndex
+                  ? MONTH_SHORT_NAMES[activeModal.monthIndex - 1]
+                  : ""}{" "}
+                (Month {activeModal.monthIndex} of 12)
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Academic Year:</span>
+              <span className="font-medium text-slate-700">
+                {activeModal.student?.academicYear || currentAcademicYear}
+              </span>
+            </div>
+            <div className="flex justify-between pt-1 border-t border-slate-200">
+              <span className="text-slate-500">Current Status:</span>
               <span
-                className={`font-bold ${
-                  activeModal.currentPaid ? "text-emerald-600" : "text-rose-600"
+                className={`font-bold px-2 py-0.5 rounded-full text-[10px] ${
+                  activeModal.currentPaid
+                    ? "bg-emerald-100 text-emerald-800"
+                    : "bg-rose-100 text-rose-800"
                 }`}
               >
                 {activeModal.currentPaid ? "PAID" : "UNPAID / DUE"}
               </span>
-            </p>
+            </div>
           </div>
 
           <div>
@@ -345,13 +431,41 @@ export function FeeLedgerMatrix({
             </label>
             <input
               type="number"
+              min="0"
+              step="500"
               value={customAmount}
               onChange={(e) => setCustomAmount(Number(e.target.value))}
               className="w-full text-sm px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
+            {/* Quick preset buttons */}
+            <div className="flex items-center gap-2 mt-2">
+              {[5000, 10000, 15000].map((amt) => (
+                <button
+                  key={amt}
+                  type="button"
+                  onClick={() => setCustomAmount(amt)}
+                  className={`text-[11px] px-2.5 py-1 rounded-lg border font-semibold transition-all ${
+                    customAmount === amt
+                      ? "bg-emerald-50 text-emerald-800 border-emerald-300"
+                      : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                  }`}
+                >
+                  ₦{amt.toLocaleString()}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <div className="pt-2 flex items-center justify-end gap-3">
+          <div className="pt-3 flex items-center justify-end gap-3 border-t border-slate-100">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setActiveModal({ isOpen: false })}
+              disabled={isPending}
+            >
+              Cancel
+            </Button>
+
             {activeModal.currentPaid ? (
               <Button
                 variant="danger"

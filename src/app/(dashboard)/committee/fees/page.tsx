@@ -8,40 +8,55 @@ import { StatCard } from "@/components/analytics/StatCard";
 export default async function CommitteeFeesPage() {
   await requireRole(["COMMITTEE"]);
 
-  const [students, allPayments] = await Promise.all([
-    db.student.findMany({
-      orderBy: { fullName: "asc" },
-      include: {
-        class: true,
-        parent: true,
-        feePayments: {
-          orderBy: { monthIndex: "asc" },
-        },
+  const students = await db.student.findMany({
+    orderBy: { fullName: "asc" },
+    include: {
+      class: true,
+      parent: true,
+      feePayments: {
+        orderBy: { monthIndex: "asc" },
       },
-    }),
-    db.studentFeePayment.findMany(),
-  ]);
+    },
+  });
 
-  const totalPaidCount = allPayments.filter((p) => p.isPaid).length;
-  const totalDueCount = allPayments.filter((p) => !p.isPaid).length;
-  const totalRevenue = allPayments.reduce((acc, p) => acc + (p.isPaid ? p.amountPaid : 0), 0);
+  const formattedRows: StudentFeeRow[] = students.map((s) => {
+    const paymentMap = new Map(s.feePayments.map((p) => [p.monthIndex, p]));
+    const months = Array.from({ length: 12 }, (_, i) => {
+      const monthIndex = i + 1;
+      const payment = paymentMap.get(monthIndex);
+      return {
+        id: payment?.id,
+        monthIndex,
+        isPaid: payment?.isPaid ?? false,
+        amountPaid: payment?.amountPaid ?? (payment?.isPaid ? 5000 : 0),
+        paidAt: payment?.paidAt ? payment.paidAt.toISOString() : null,
+      };
+    });
 
-  const formattedRows: StudentFeeRow[] = students.map((s) => ({
-    studentId: s.id,
-    studentName: s.fullName,
-    admissionNumber: s.admissionNumber,
-    className: s.class.name,
-    academicYear: s.class.academicYear || "2025/2026",
-    parentName: s.parent.fullName,
-    parentPhone: s.parent.phoneNumber,
-    months: s.feePayments.map((p) => ({
-      id: p.id,
-      monthIndex: p.monthIndex,
-      isPaid: p.isPaid,
-      amountPaid: p.amountPaid,
-      paidAt: p.paidAt ? p.paidAt.toISOString() : null,
-    })),
-  }));
+    return {
+      studentId: s.id,
+      studentName: s.fullName,
+      admissionNumber: s.admissionNumber,
+      className: s.class?.name || "Unassigned",
+      academicYear: s.class?.academicYear || "2025/2026",
+      parentName: s.parent?.fullName || "N/A",
+      parentPhone: s.parent?.phoneNumber || null,
+      months,
+    };
+  });
+
+  const totalPaidCount = formattedRows.reduce(
+    (acc, row) => acc + row.months.filter((m) => m.isPaid).length,
+    0
+  );
+  const totalDueCount = formattedRows.reduce(
+    (acc, row) => acc + row.months.filter((m) => !m.isPaid).length,
+    0
+  );
+  const totalRevenue = formattedRows.reduce(
+    (acc, row) => acc + row.months.reduce((sum, m) => sum + (m.isPaid ? m.amountPaid : 0), 0),
+    0
+  );
 
   return (
     <div className="space-y-6">
