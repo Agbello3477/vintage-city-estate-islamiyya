@@ -24,6 +24,11 @@ export const studentEnrollSchema = z.object({
   fullName: z.string().min(3, "Student full name is required"),
   gender: z.enum(["MALE", "FEMALE"]),
   dateOfBirth: z.string().optional().nullable(),
+  address: z.string().optional().nullable(),
+  phoneNumber: z.string().optional().nullable(),
+  hasMedicalCondition: z.boolean().default(false),
+  medicalConditionDetails: z.string().optional().nullable(),
+  commencementDate: z.string().optional().nullable(),
   classId: z.string().min(1, "Class selection is required"),
   parentId: z.string().min(1, "Parent selection is required"),
 });

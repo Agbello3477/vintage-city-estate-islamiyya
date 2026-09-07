@@ -286,11 +286,18 @@ export async function enrollStudentAction(formData: FormData) {
     return { error: "Unauthorized: Only Committee or Teachers can enroll students." };
   }
 
+  const hasMed = formData.get("hasMedicalCondition") === "true" || formData.get("hasMedicalCondition") === "on";
+
   const rawData = {
     admissionNumber: formData.get("admissionNumber")?.toString() || "",
     fullName: formData.get("fullName")?.toString() || "",
     gender: formData.get("gender")?.toString() || "MALE",
     dateOfBirth: formData.get("dateOfBirth")?.toString() || null,
+    address: formData.get("address")?.toString() || null,
+    phoneNumber: formData.get("phoneNumber")?.toString() || null,
+    hasMedicalCondition: hasMed,
+    medicalConditionDetails: formData.get("medicalConditionDetails")?.toString() || null,
+    commencementDate: formData.get("commencementDate")?.toString() || null,
     classId: formData.get("classId")?.toString() || "",
     parentId: formData.get("parentId")?.toString() || "",
   };
@@ -313,6 +320,11 @@ export async function enrollStudentAction(formData: FormData) {
       fullName: rawData.fullName,
       gender: rawData.gender,
       dateOfBirth: rawData.dateOfBirth ? new Date(rawData.dateOfBirth) : null,
+      address: rawData.address,
+      phoneNumber: rawData.phoneNumber,
+      hasMedicalCondition: rawData.hasMedicalCondition,
+      medicalConditionDetails: rawData.hasMedicalCondition ? rawData.medicalConditionDetails : null,
+      commencementDate: rawData.commencementDate ? new Date(rawData.commencementDate) : null,
       classId: rawData.classId,
       parentId: rawData.parentId,
     },
@@ -395,6 +407,11 @@ export async function updateStudentAction(formData: FormData) {
   const fullName = formData.get("fullName")?.toString() || "";
   const gender = formData.get("gender")?.toString() || "MALE";
   const dateOfBirth = formData.get("dateOfBirth")?.toString() || null;
+  const address = formData.get("address")?.toString() || null;
+  const phoneNumber = formData.get("phoneNumber")?.toString() || null;
+  const hasMed = formData.get("hasMedicalCondition") === "true" || formData.get("hasMedicalCondition") === "on";
+  const medicalConditionDetails = formData.get("medicalConditionDetails")?.toString() || null;
+  const commencementDate = formData.get("commencementDate")?.toString() || null;
   const classId = formData.get("classId")?.toString() || "";
   const parentId = formData.get("parentId")?.toString() || "";
 
@@ -408,6 +425,11 @@ export async function updateStudentAction(formData: FormData) {
       fullName,
       gender,
       dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
+      address,
+      phoneNumber,
+      hasMedicalCondition: hasMed,
+      medicalConditionDetails: hasMed ? medicalConditionDetails : null,
+      commencementDate: commencementDate ? new Date(commencementDate) : null,
       classId,
       parentId,
     },

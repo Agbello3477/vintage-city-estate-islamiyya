@@ -48,17 +48,22 @@ model Class {
 }
 
 model Student {
-  id               String               @id @default(uuid())
-  admissionNumber  String               @unique
-  fullName         String
-  gender           String               // MALE, FEMALE
-  dateOfBirth      DateTime?
-  classId          String
-  parentId         String
-  createdAt        DateTime             @default(now())
+  id                      String               @id @default(uuid())
+  admissionNumber         String               @unique
+  fullName                String
+  gender                  String               // MALE, FEMALE
+  dateOfBirth             DateTime?
+  address                 String?
+  phoneNumber             String?
+  hasMedicalCondition     Boolean              @default(false)
+  medicalConditionDetails String?
+  commencementDate        DateTime?
+  classId                 String
+  parentId                String
+  createdAt               DateTime             @default(now())
 
-  class            Class                @relation(fields: [classId], references: [id], onDelete: Restrict)
-  parent           User                 @relation("ParentStudents", fields: [parentId], references: [id], onDelete: Restrict)
+  class                   Class                @relation(fields: [classId], references: [id], onDelete: Restrict)
+  parent                  User                 @relation("ParentStudents", fields: [parentId], references: [id], onDelete: Restrict)
   attendance       Attendance[]
   academicRecords  AcademicRecord[]
   feePayments      StudentFeePayment[]
