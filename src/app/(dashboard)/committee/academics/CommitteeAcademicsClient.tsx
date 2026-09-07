@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { GradeEntryModal } from "@/components/academics/GradeEntryModal";
 import { TahfizProgressMap, TahfizRecordItem } from "@/components/tahfiz/TahfizProgressMap";
 import { exportBulkReportCardsZip, BulkReportStudentData } from "@/lib/export-utils";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
+import { Pagination } from "@/components/ui/Pagination";
 import { formatDate } from "@/lib/utils";
 import {
   BookOpenCheck,
@@ -85,6 +86,9 @@ export function CommitteeAcademicsClient({
   const [isExportingZip, setIsExportingZip] = useState(false);
   const [exportProgress, setExportProgress] = useState<string>("");
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
   const filtered = initialRecords.filter((r) => {
     if (subjectFilter !== "ALL" && r.subject !== subjectFilter) return false;
     if (search.trim()) {
@@ -95,6 +99,15 @@ export function CommitteeAcademicsClient({
     }
     return true;
   });
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [subjectFilter, search]);
+
+  const paginatedRecords = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, currentPage, pageSize]);
 
   const selectedStudent = students.find((s) => s.id === selectedStudentId) || students[0];
   const studentTahfizRecords = tahfizRecords.filter((t) => t.studentId === selectedStudentId);
@@ -300,7 +313,7 @@ export function CommitteeAcademicsClient({
                       </td>
                     </tr>
                   ) : (
-                    filtered.map((r) => {
+                    paginatedRecords.map((r) => {
                       const pct = Math.round((r.score / r.totalObtainable) * 100);
                       let grade = "A";
                       let badgeVar: any = "success";
@@ -358,6 +371,18 @@ export function CommitteeAcademicsClient({
               </table>
             </div>
           </div>
+
+          {/* Pagination */}
+          {filtered.length > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalItems={filtered.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+              pageSizeOptions={[10, 25, 50, 100]}
+            />
+          )}
         </div>
       )}
 

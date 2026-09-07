@@ -5,6 +5,7 @@ import { enrollStudentAction, updateStudentAction } from "@/lib/actions";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
+import { Pagination } from "@/components/ui/Pagination";
 import { formatDate } from "@/lib/utils";
 import {
   UserPlus,
@@ -83,6 +84,8 @@ export function StudentsClient({
 
   const [search, setSearch] = useState("");
   const [classFilter, setClassFilter] = useState("ALL");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // Enroll Form State
   const [admissionNumber, setAdmissionNumber] = useState(
@@ -114,6 +117,11 @@ export function StudentsClient({
     }
     return true;
   });
+
+  const paginatedStudents = filteredStudents.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
 
   const handleEnroll = (e: React.FormEvent) => {
     e.preventDefault();
@@ -257,7 +265,7 @@ export function StudentsClient({
 
       {/* MOBILE CARD VIEW */}
       <div className="block lg:hidden space-y-3">
-        {filteredStudents.map((s) => (
+        {paginatedStudents.map((s) => (
           <div key={s.id} className="p-4 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-3">
             <div className="flex items-start justify-between">
               <div>
@@ -371,7 +379,7 @@ export function StudentsClient({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredStudents.map((s) => (
+              {paginatedStudents.map((s) => (
                 <tr key={s.id} className="hover:bg-slate-50/60 transition-colors">
                   <td className="px-4 py-3.5">
                     <div className="font-semibold text-slate-800 text-sm">{s.fullName}</div>
@@ -448,6 +456,18 @@ export function StudentsClient({
           </table>
         </div>
       </div>
+
+      {/* Pagination Controls */}
+      {filteredStudents.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalItems={filteredStudents.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={setPageSize}
+          pageSizeOptions={[10, 25, 50, 100]}
+        />
+      )}
 
       {/* Edit Student Modal */}
       <Modal

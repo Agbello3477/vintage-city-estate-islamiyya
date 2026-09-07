@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import React, { useState, useTransition, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -28,6 +28,7 @@ import {
   deleteNotificationAction,
 } from "@/lib/actions";
 import { Button } from "@/components/ui/Button";
+import { Pagination } from "@/components/ui/Pagination";
 import { BroadcastModal } from "@/components/notifications/BroadcastModal";
 import { SessionUser } from "@/types";
 import { toast } from "sonner";
@@ -61,6 +62,9 @@ export function NotificationsClient({
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   // Filtered list
@@ -76,6 +80,15 @@ export function NotificationsClient({
 
     return matchSearch && matchType && matchStatus;
   });
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedType, statusFilter]);
+
+  const paginatedList = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredList.slice(start, start + pageSize);
+  }, [filteredList, currentPage, pageSize]);
 
   const handleMarkAsRead = (id: string) => {
     startTransition(async () => {
@@ -241,7 +254,7 @@ export function NotificationsClient({
             </p>
           </div>
         ) : (
-          filteredList.map((item) => (
+          paginatedList.map((item) => (
             <div
               key={item.id}
               onClick={() => {
@@ -333,6 +346,18 @@ export function NotificationsClient({
           ))
         )}
       </div>
+
+      {/* Pagination */}
+      {filteredList.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalItems={filteredList.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={setPageSize}
+          pageSizeOptions={[10, 25, 50, 100]}
+        />
+      )}
 
       {/* Broadcast Modal for Committee */}
       {user.role === "COMMITTEE" && (

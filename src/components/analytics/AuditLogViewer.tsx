@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { formatDate, formatTime } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
+import { Pagination } from "@/components/ui/Pagination";
 import { ShieldAlert, Search, Filter } from "lucide-react";
 
 export interface AuditLogItem {
@@ -24,6 +25,8 @@ interface AuditLogViewerProps {
 export function AuditLogViewer({ logs }: AuditLogViewerProps) {
   const [search, setSearch] = useState("");
   const [actionFilter, setActionFilter] = useState("ALL");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const filtered = logs.filter((log) => {
     if (actionFilter !== "ALL" && log.action !== actionFilter) return false;
@@ -36,6 +39,15 @@ export function AuditLogViewer({ logs }: AuditLogViewerProps) {
     }
     return true;
   });
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [actionFilter, search]);
+
+  const paginatedLogs = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, currentPage, pageSize]);
 
   const getActionBadge = (action: string) => {
     if (action.includes("MUTATION") || action.includes("OVERRIDE")) {
@@ -107,7 +119,7 @@ export function AuditLogViewer({ logs }: AuditLogViewerProps) {
                   </td>
                 </tr>
               ) : (
-                filtered.map((log) => (
+                paginatedLogs.map((log) => (
                   <tr key={log.id} className="hover:bg-slate-50/60 transition-colors">
                     <td className="px-4 py-3.5 whitespace-nowrap text-slate-500 font-mono">
                       <div>{formatDate(log.createdAt)}</div>
@@ -131,6 +143,18 @@ export function AuditLogViewer({ logs }: AuditLogViewerProps) {
           </table>
         </div>
       </div>
+
+      {/* Pagination */}
+      {filtered.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalItems={filtered.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={setPageSize}
+          pageSizeOptions={[10, 25, 50, 100]}
+        />
+      )}
     </div>
   );
 }

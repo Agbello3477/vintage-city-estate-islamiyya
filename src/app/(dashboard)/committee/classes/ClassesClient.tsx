@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import React, { useState, useTransition, useMemo } from "react";
 import { createClassAction, updateClassAction } from "@/lib/actions";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
+import { Pagination } from "@/components/ui/Pagination";
 import { formatDate } from "@/lib/utils";
 import { School, UserPlus, Users, BookOpen, Edit3, UserCheck, CheckCircle, Sparkles } from "lucide-react";
 import { toast } from "sonner";
@@ -37,6 +38,13 @@ export function ClassesClient({
 }) {
   const [isPending, startTransition] = useTransition();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(9);
+
+  const paginatedClasses = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return initialClasses.slice(start, start + pageSize);
+  }, [initialClasses, currentPage, pageSize]);
 
   // Edit Class / Assign Ustadh Modal State
   const [editModal, setEditModal] = useState<{
@@ -127,7 +135,7 @@ export function ClassesClient({
 
       {/* Classes Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {initialClasses.map((cls) => (
+        {paginatedClasses.map((cls) => (
           <div
             key={cls.id}
             className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:border-emerald-300 transition-all space-y-4 flex flex-col justify-between"
@@ -179,6 +187,18 @@ export function ClassesClient({
           </div>
         ))}
       </div>
+
+      {/* Pagination */}
+      {initialClasses.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalItems={initialClasses.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={setPageSize}
+          pageSizeOptions={[6, 9, 15, 30]}
+        />
+      )}
 
       {/* Create Class Modal */}
       <Modal

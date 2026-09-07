@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import React, { useState, useTransition, useMemo, useEffect } from "react";
 import { formatDate, formatTime } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
+import { Pagination } from "@/components/ui/Pagination";
 import { submitFeedbackTicketAction, respondTicketAction } from "@/lib/actions";
 import {
   MessageSquarePlus,
@@ -59,6 +60,10 @@ export function TicketManagement({
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [categoryFilter, setCategoryFilter] = useState<string>("ALL");
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
   // Modals
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [responseModal, setResponseModal] = useState<{
@@ -81,6 +86,15 @@ export function TicketManagement({
     if (categoryFilter !== "ALL" && t.category !== categoryFilter) return false;
     return true;
   });
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, categoryFilter]);
+
+  const paginatedTickets = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredTickets.slice(start, start + pageSize);
+  }, [filteredTickets, currentPage, pageSize]);
 
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -215,7 +229,7 @@ export function TicketManagement({
             No feedback or complaint tickets found matching the selected filters.
           </div>
         ) : (
-          filteredTickets.map((ticket) => (
+          paginatedTickets.map((ticket) => (
             <div
               key={ticket.id}
               className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4 hover:border-emerald-200 transition-colors"
@@ -286,6 +300,18 @@ export function TicketManagement({
           ))
         )}
       </div>
+
+      {/* Pagination */}
+      {filteredTickets.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalItems={filteredTickets.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={setPageSize}
+          pageSizeOptions={[10, 25, 50, 100]}
+        />
+      )}
 
       {/* Parent Create Ticket Modal */}
       <Modal

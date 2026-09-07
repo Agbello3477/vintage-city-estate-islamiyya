@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import React, { useState, useTransition, useMemo, useEffect } from "react";
 import {
   createUserAction,
   toggleUserStatusAction,
@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
+import { Pagination } from "@/components/ui/Pagination";
 import { formatDate } from "@/lib/utils";
 import { ROLE_LABELS } from "@/types";
 import {
@@ -78,6 +79,9 @@ export function UserManagementClient({
   const [role, setRole] = useState<"COMMITTEE" | "TEACHER" | "PARENT">("PARENT");
   const [initialChildIds, setInitialChildIds] = useState<string[]>([]);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
   const filteredUsers = initialUsers.filter((u) => {
     if (roleFilter !== "ALL" && u.role !== roleFilter) return false;
     if (search.trim()) {
@@ -89,6 +93,15 @@ export function UserManagementClient({
     }
     return true;
   });
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [roleFilter, search]);
+
+  const paginatedUsers = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredUsers.slice(start, start + pageSize);
+  }, [filteredUsers, currentPage, pageSize]);
 
   const handleCreateUser = (e: React.FormEvent) => {
     e.preventDefault();
@@ -243,7 +256,7 @@ export function UserManagementClient({
 
       {/* MOBILE CARD VIEW */}
       <div className="block lg:hidden space-y-3">
-        {filteredUsers.map((u) => {
+        {paginatedUsers.map((u) => {
           const linkedChildren = allStudents.filter((s) => s.parentId === u.id);
 
           return (
@@ -350,7 +363,7 @@ export function UserManagementClient({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredUsers.map((u) => {
+              {paginatedUsers.map((u) => {
                 const linkedChildren = allStudents.filter((s) => s.parentId === u.id);
 
                 return (
@@ -442,6 +455,18 @@ export function UserManagementClient({
           </table>
         </div>
       </div>
+
+      {/* Pagination */}
+      {filteredUsers.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalItems={filteredUsers.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={setPageSize}
+          pageSizeOptions={[10, 25, 50, 100]}
+        />
+      )}
 
       {/* Assign Children to Parent Modal */}
       <Modal

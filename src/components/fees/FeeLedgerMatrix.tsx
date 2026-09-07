@@ -18,6 +18,7 @@ import {
   Users,
 } from "lucide-react";
 import { exportFeeLedgerToExcel, exportFeeLedgerToCSV } from "@/lib/export-utils";
+import { Pagination } from "@/components/ui/Pagination";
 import { toast } from "sonner";
 
 export interface FeeMonthItem {
@@ -53,6 +54,8 @@ export function FeeLedgerMatrix({
   const [isPending, startTransition] = useTransition();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedClass, setSelectedClass] = useState("ALL");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // Distinct classes for filter dropdown
   const uniqueClasses = useMemo(() => {
@@ -71,6 +74,12 @@ export function FeeLedgerMatrix({
       return matchSearch && matchClass;
     });
   }, [studentsData, searchTerm, selectedClass]);
+
+  // Paginated students slice
+  const paginatedStudents = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredStudents.slice(start, start + pageSize);
+  }, [filteredStudents, currentPage, pageSize]);
 
   // Selected fee item for editing modal
   const [activeModal, setActiveModal] = useState<{
@@ -237,7 +246,7 @@ export function FeeLedgerMatrix({
 
       {/* MOBILE CARD VIEW (Optimized for smartphones) */}
       <div className="block lg:hidden space-y-4">
-        {filteredStudents.map((student) => {
+        {paginatedStudents.map((student) => {
           const paidMonthsCount = student.months.filter((m) => m.isPaid).length;
           const totalPaidAmount = student.months.reduce(
             (acc, m) => acc + (m.isPaid ? m.amountPaid : 0),
@@ -301,7 +310,7 @@ export function FeeLedgerMatrix({
       </div>
 
       {/* DESKTOP MATRIX VIEW (For large screens) */}
-      {filteredStudents.length > 0 && (
+      {paginatedStudents.length > 0 && (
         <div className="hidden lg:block overflow-x-auto bg-white rounded-2xl border border-slate-200 shadow-sm">
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 border-b border-slate-200 font-bold uppercase tracking-wider text-slate-600">
@@ -316,7 +325,7 @@ export function FeeLedgerMatrix({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredStudents.map((student) => {
+              {paginatedStudents.map((student) => {
                 const paidMonthsCount = student.months.filter((m) => m.isPaid).length;
                 const totalPaidAmount = student.months.reduce(
                   (acc, m) => acc + (m.isPaid ? m.amountPaid : 0),
@@ -376,6 +385,18 @@ export function FeeLedgerMatrix({
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* Pagination Controls */}
+      {filteredStudents.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalItems={filteredStudents.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={setPageSize}
+          pageSizeOptions={[10, 25, 50, 100]}
+        />
       )}
 
       {/* Edit Payment Modal */}

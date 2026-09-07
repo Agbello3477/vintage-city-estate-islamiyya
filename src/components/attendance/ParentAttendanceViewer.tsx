@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { formatTime, formatDate } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
+import { Pagination } from "@/components/ui/Pagination";
 import { CheckCircle2, Clock, XCircle, AlertTriangle, Calendar, User } from "lucide-react";
 
 interface AttendanceRecord {
@@ -37,9 +38,21 @@ export function ParentAttendanceViewer({ childrenData }: ParentAttendanceViewerP
   const [selectedStudentId, setSelectedStudentId] = useState<string>(
     childrenData[0]?.studentId || ""
   );
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const activeStudent =
     childrenData.find((c) => c.studentId === selectedStudentId) || childrenData[0];
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedStudentId]);
+
+  const paginatedRecords = useMemo(() => {
+    const records = activeStudent?.records || [];
+    const start = (currentPage - 1) * pageSize;
+    return records.slice(start, start + pageSize);
+  }, [activeStudent?.records, currentPage, pageSize]);
 
   if (!activeStudent) {
     return (
@@ -161,7 +174,7 @@ export function ParentAttendanceViewer({ childrenData }: ParentAttendanceViewerP
               No recorded attendance logs yet.
             </div>
           ) : (
-            activeStudent.records.map((r) => (
+            paginatedRecords.map((r) => (
               <div key={r.id} className="p-4 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-slate-800">{formatDate(r.sessionDate)}</span>
@@ -201,7 +214,7 @@ export function ParentAttendanceViewer({ childrenData }: ParentAttendanceViewerP
                   </td>
                 </tr>
               ) : (
-                activeStudent.records.map((r) => (
+                paginatedRecords.map((r) => (
                   <tr key={r.id} className="hover:bg-slate-50/60 transition-colors">
                     <td className="px-4 py-3.5 font-medium text-slate-800">
                       {formatDate(r.sessionDate)}
@@ -222,6 +235,18 @@ export function ParentAttendanceViewer({ childrenData }: ParentAttendanceViewerP
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {activeStudent.records.length > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalItems={activeStudent.records.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+            pageSizeOptions={[5, 10, 20, 50]}
+          />
+        )}
       </div>
     </div>
   );
