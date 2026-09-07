@@ -2,6 +2,7 @@ import { requireRole } from "@/lib/rbac";
 import { db } from "@/lib/db";
 import { AcademicGrowthChart } from "@/components/academics/AcademicGrowthChart";
 import { ReportCardView } from "@/components/academics/ReportCardView";
+import { TahfizProgressMap } from "@/components/tahfiz/TahfizProgressMap";
 
 export default async function ParentAcademicsPage({
   searchParams,
@@ -16,6 +17,9 @@ export default async function ParentAcademicsPage({
       class: true,
       parent: true,
       attendance: true,
+      tahfizProgress: {
+        orderBy: { surahNumber: "asc" },
+      },
       academicRecords: {
         orderBy: { assessmentDate: "desc" },
       },
@@ -77,6 +81,30 @@ export default async function ParentAcademicsPage({
 
       {/* Visual Analytics Charts */}
       <AcademicGrowthChart subjectData={chartData} />
+
+      {/* Interactive Quran & Tahfiz Progress Tracker with Voice Notes */}
+      <TahfizProgressMap
+        studentId={selectedChild.id}
+        studentName={selectedChild.fullName}
+        records={selectedChild.tahfizProgress.map((t) => ({
+          id: t.id,
+          studentId: t.studentId,
+          juzNumber: t.juzNumber,
+          surahNumber: t.surahNumber,
+          surahName: t.surahName,
+          surahNameAr: t.surahNameAr,
+          startAyah: t.startAyah,
+          endAyah: t.endAyah,
+          totalAyahs: t.totalAyahs,
+          status: t.status as any,
+          quality: t.quality as any,
+          voiceNote: t.voiceNote,
+          audioDuration: t.audioDuration,
+          teacherNote: t.teacherNote,
+          evaluatedAt: t.evaluatedAt.toISOString(),
+        }))}
+        canEdit={false}
+      />
 
       {/* Official Printable & Downloadable Report Card */}
       <ReportCardView

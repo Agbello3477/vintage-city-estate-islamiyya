@@ -10,6 +10,7 @@ async function main() {
   await prisma.revokedToken.deleteMany();
   await prisma.auditLog.deleteMany();
   await prisma.feedbackTicket.deleteMany();
+  await prisma.tahfizProgress.deleteMany();
   await prisma.studentFeePayment.deleteMany();
   await prisma.academicRecord.deleteMany();
   await prisma.attendance.deleteMany();
@@ -454,6 +455,128 @@ async function main() {
 
   for (const record of academicRecordsData) {
     await prisma.academicRecord.create({ data: record });
+  }
+
+  // 5b. Seed Quran & Tahfiz Progress Records (Juz 30 & Juz 29)
+  const tahfizData = [
+    // Student Bilal
+    {
+      studentId: studentBilal.id,
+      juzNumber: 30,
+      surahNumber: 78,
+      surahName: "An-Naba",
+      surahNameAr: "النبأ",
+      startAyah: 1,
+      endAyah: 40,
+      totalAyahs: 40,
+      status: "COMPLETED",
+      quality: "MUMTAZ",
+      teacherNote: "MashaAllah, flawless memorization and smooth recitation with proper Tajweed rules.",
+      evaluatedById: ustadhAhmad.id,
+    },
+    {
+      studentId: studentBilal.id,
+      juzNumber: 30,
+      surahNumber: 79,
+      surahName: "An-Nazi'at",
+      surahNameAr: "النازعات",
+      startAyah: 1,
+      endAyah: 46,
+      totalAyahs: 46,
+      status: "COMPLETED",
+      quality: "JAYYID_JIDDAN",
+      teacherNote: "Very good retention. Review Waqf on Ayah 30-33.",
+      evaluatedById: ustadhAhmad.id,
+    },
+    {
+      studentId: studentBilal.id,
+      juzNumber: 30,
+      surahNumber: 80,
+      surahName: "'Abasa",
+      surahNameAr: "عبس",
+      startAyah: 1,
+      endAyah: 42,
+      totalAyahs: 42,
+      status: "IN_PROGRESS",
+      quality: "JAYYID",
+      teacherNote: "Currently memorizing Ayahs 1 to 25. Good progress.",
+      evaluatedById: ustadhAhmad.id,
+    },
+    {
+      studentId: studentBilal.id,
+      juzNumber: 30,
+      surahNumber: 112,
+      surahName: "Al-Ikhlas",
+      surahNameAr: "الإخلاص",
+      startAyah: 1,
+      endAyah: 4,
+      totalAyahs: 4,
+      status: "COMPLETED",
+      quality: "MUMTAZ",
+      teacherNote: "Perfect.",
+      evaluatedById: ustadhAhmad.id,
+    },
+    {
+      studentId: studentBilal.id,
+      juzNumber: 30,
+      surahNumber: 113,
+      surahName: "Al-Falaq",
+      surahNameAr: "الفلق",
+      startAyah: 1,
+      endAyah: 5,
+      totalAyahs: 5,
+      status: "COMPLETED",
+      quality: "MUMTAZ",
+      teacherNote: "Perfect.",
+      evaluatedById: ustadhAhmad.id,
+    },
+    {
+      studentId: studentBilal.id,
+      juzNumber: 30,
+      surahNumber: 114,
+      surahName: "An-Nas",
+      surahNameAr: "الناس",
+      startAyah: 1,
+      endAyah: 6,
+      totalAyahs: 6,
+      status: "COMPLETED",
+      quality: "MUMTAZ",
+      teacherNote: "Perfect.",
+      evaluatedById: ustadhAhmad.id,
+    },
+    {
+      studentId: studentBilal.id,
+      juzNumber: 29,
+      surahNumber: 67,
+      surahName: "Al-Mulk",
+      surahNameAr: "الملك",
+      startAyah: 1,
+      endAyah: 30,
+      totalAyahs: 30,
+      status: "COMPLETED",
+      quality: "MUMTAZ",
+      teacherNote: "Completed full Surah Al-Mulk with melodious Qira'at.",
+      evaluatedById: ustadhAhmad.id,
+    },
+    // Student Maryam
+    {
+      studentId: studentMaryam.id,
+      juzNumber: 30,
+      surahNumber: 78,
+      surahName: "An-Naba",
+      surahNameAr: "النبأ",
+      startAyah: 1,
+      endAyah: 40,
+      totalAyahs: 40,
+      status: "COMPLETED",
+      quality: "MUMTAZ",
+      teacherNote: "MashaAllah, great consistency and clear articulation.",
+      evaluatedById: ustadhUsman.id,
+    },
+  ];
+
+  for (const t of tahfizData) {
+    await prisma.tahfizProgress.create({ data: t });
   }
 
   console.log("✅ Academic and Tahfiz records seeded");

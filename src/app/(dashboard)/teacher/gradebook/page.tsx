@@ -16,7 +16,7 @@ export default async function TeacherGradebookPage({
 
   const classIds = assignedClasses.map((c) => c.id);
 
-  const [records, students] = await Promise.all([
+  const [records, tahfizRecords, students] = await Promise.all([
     db.academicRecord.findMany({
       where: { classId: { in: classIds } },
       orderBy: { assessmentDate: "desc" },
@@ -26,10 +26,18 @@ export default async function TeacherGradebookPage({
         gradedBy: true,
       },
     }),
+    db.tahfizProgress.findMany({
+      where: { student: { classId: { in: classIds } } },
+      orderBy: { surahNumber: "asc" },
+    }),
     db.student.findMany({
       where: { classId: { in: classIds } },
       orderBy: { fullName: "asc" },
-      include: { class: true },
+      include: {
+        class: true,
+        parent: true,
+        attendance: true,
+      },
     }),
   ]);
 
@@ -37,13 +45,26 @@ export default async function TeacherGradebookPage({
     <div className="space-y-6">
       <CommitteeAcademicsClient
         initialRecords={records as any}
-        students={students.map((s) => ({
-          id: s.id,
-          fullName: s.fullName,
-          admissionNumber: s.admissionNumber,
-          classId: s.classId,
-          className: s.class.name,
-        }))}
+        tahfizRecords={tahfizRecords as any}
+        students={students.map((s) => {
+          const totalAtt = s.attendance.length;
+          const presentAtt = s.attendance.filter((a) => a.status === "PRESENT").length;
+          const attPct = totalAtt > 0 ? Math.round((presentAtt / totalAtt) * 100) : 100;
+
+          return {
+            id: s.id,
+            fullName: s.fullName,
+            admissionNumber: s.admissionNumber,
+            gender: s.gender,
+            classId: s.classId,
+            className: s.class.name,
+            academicYear: s.class.academicYear || "2025/2026",
+            parentName: s.parent.fullName,
+            attendancePercentage: attPct,
+            totalSessions: totalAtt,
+            presentSessions: presentAtt,
+          };
+        })}
       />
     </div>
   );

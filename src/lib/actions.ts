@@ -865,3 +865,110 @@ export async function respondTicketAction(formData: FormData) {
   revalidatePath("/parent/tickets");
   return { success: true, ticket };
 }
+
+// --- TAHFIZ (QURAN MEMORIZATION) ACTIONS ---
+
+export async function saveTahfizProgressAction(data: {
+  studentId: string;
+  juzNumber: number;
+  surahNumber: number;
+  surahName: string;
+  surahNameAr?: string;
+  startAyah: number;
+  endAyah: number;
+  totalAyahs: number;
+  status: "COMPLETED" | "IN_PROGRESS" | "REVISION_NEEDED";
+  quality: "MUMTAZ" | "JAYYID_JIDDAN" | "JAYYID" | "MAQBOOL";
+  voiceNote?: string | null;
+  audioDuration?: number | null;
+  teacherNote?: string | null;
+}) {
+  const session = await getSession();
+  if (!session || (session.role !== "COMMITTEE" && session.role !== "TEACHER")) {
+    return { error: "Unauthorized: Only Ustadhs and Committee can assess Tahfiz progress." };
+  }
+
+  const existing = await db.tahfizProgress.findFirst({
+    where: {
+      studentId: data.studentId,
+      surahNumber: data.surahNumber,
+    },
+  });
+
+  let record;
+  if (existing) {
+    record = await db.tahfizProgress.update({
+      where: { id: existing.id },
+      data: {
+        juzNumber: data.juzNumber,
+        surahName: data.surahName,
+        surahNameAr: data.surahNameAr || existing.surahNameAr,
+        startAyah: data.startAyah,
+        endAyah: data.endAyah,
+        totalAyahs: data.totalAyahs,
+        status: data.status,
+        quality: data.quality,
+        voiceNote: data.voiceNote !== undefined ? data.voiceNote : existing.voiceNote,
+        audioDuration: data.audioDuration !== undefined ? data.audioDuration : existing.audioDuration,
+        teacherNote: data.teacherNote !== undefined ? data.teacherNote : existing.teacherNote,
+        evaluatedById: session.id,
+        evaluatedAt: new Date(),
+      },
+    });
+  } else {
+    record = await db.tahfizProgress.create({
+      data: {
+        studentId: data.studentId,
+        juzNumber: data.juzNumber,
+        surahNumber: data.surahNumber,
+        surahName: data.surahName,
+        surahNameAr: data.surahNameAr || null,
+        startAyah: data.startAyah,
+        endAyah: data.endAyah,
+        totalAyahs: data.totalAyahs,
+        status: data.status,
+        quality: data.quality,
+        voiceNote: data.voiceNote || null,
+        audioDuration: data.audioDuration || null,
+        teacherNote: data.teacherNote || null,
+        evaluatedById: session.id,
+        evaluatedAt: new Date(),
+      },
+    });
+  }
+
+  await recordAuditLog({
+    action: "TAHFIZ_EVALUATION_SAVED",
+    entityType: "TAHFIZ_PROGRESS",
+    entityId: record.id,
+    details: `${session.fullName} evaluated Tahfiz for student on Surah ${data.surahName} (Status: ${data.status}, Quality: ${data.quality})`,
+  });
+
+  revalidatePath("/parent/academics");
+  revalidatePath("/teacher/gradebook");
+  revalidatePath("/committee/academics");
+  return { success: true, record };
+}
+
+export async function deleteTahfizProgressAction(id: string) {
+  const session = await getSession();
+  if (!session || (session.role !== "COMMITTEE" && session.role !== "TEACHER")) {
+    return { error: "Unauthorized." };
+  }
+
+  await db.tahfizProgress.delete({
+    where: { id },
+  });
+
+  await recordAuditLog({
+    action: "TAHFIZ_EVALUATION_DELETED",
+    entityType: "TAHFIZ_PROGRESS",
+    entityId: id,
+    details: `${session.fullName} removed Tahfiz record ${id}`,
+  });
+
+  revalidatePath("/parent/academics");
+  revalidatePath("/teacher/gradebook");
+  revalidatePath("/committee/academics");
+  return { success: true };
+}

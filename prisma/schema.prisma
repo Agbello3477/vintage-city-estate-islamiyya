@@ -68,6 +68,7 @@ model Student {
   academicRecords  AcademicRecord[]
   feePayments      StudentFeePayment[]
   feedbackTickets  FeedbackTicket[]
+  tahfizProgress   TahfizProgress[]
 
   @@index([classId])
   @@index([parentId])
@@ -186,4 +187,30 @@ model RevokedToken {
   expiresAt DateTime
 
   @@index([token])
+}
+
+model TahfizProgress {
+  id            String   @id @default(uuid())
+  studentId     String
+  juzNumber     Int      // 1 to 30
+  surahNumber   Int      // 1 to 114
+  surahName     String
+  surahNameAr   String?
+  startAyah     Int      @default(1)
+  endAyah       Int
+  totalAyahs    Int
+  status        String   @default("COMPLETED") // COMPLETED, IN_PROGRESS, REVISION_NEEDED
+  quality       String   @default("MUMTAZ")     // MUMTAZ, JAYYID_JIDDAN, JAYYID, MAQBOOL
+  voiceNote     String?  // Base64 audio clip / data URL
+  audioDuration Int?     // Duration in seconds
+  teacherNote   String?
+  evaluatedById String?
+  evaluatedAt   DateTime @default(now())
+  createdAt     DateTime @default(now())
+
+  student       Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+  @@index([juzNumber])
+  @@index([surahNumber])
 }
