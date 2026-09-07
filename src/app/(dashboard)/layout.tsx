@@ -20,7 +20,7 @@ export default async function DashboardLayout({
         </main>
       </div>
       <footer className="hidden md:block border-t border-slate-200/60 bg-white/60 py-4 text-center text-xs text-slate-500 space-y-0.5 mt-auto">
-        <p>Vintage City Estate Islamiyya &bull; All Rights Reserved © {new Date().getFullYear()}</p>
+        <p>Madarasatul Islamiyya wa Tarbiyya &bull; All Rights Reserved © {new Date().getFullYear()}</p>
         <p className="font-semibold text-emerald-800 text-[11px]">Powered by MaSha Tech Innovations</p>
       </footer>
       <MobileBottomNav user={user} />

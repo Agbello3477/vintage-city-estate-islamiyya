@@ -90,13 +90,13 @@ export function Navbar({ user }: NavbarProps) {
               <div>
                 <div className="flex items-center gap-1.5 sm:gap-2">
                   <span className="text-sm sm:text-base font-bold tracking-tight text-white group-hover:text-emerald-200 transition-colors">
-                    Vintage City Estate
+                    Madarasatul Islamiyya
                   </span>
                   <span className="hidden sm:inline-block px-1.5 py-0.5 text-[9px] font-semibold bg-emerald-800 text-emerald-200 rounded border border-emerald-700">
-                    VCE-IMP
+                    wa Tarbiyya
                   </span>
                 </div>
-                <p className="text-[10px] sm:text-[11px] text-emerald-300/90 font-medium">Islamiyya Portal</p>
+                <p className="text-[10px] sm:text-[11px] text-emerald-300/90 font-medium">Management Portal</p>
               </div>
             </Link>
           </div>

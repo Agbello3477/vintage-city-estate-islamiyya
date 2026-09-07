@@ -33,9 +33,9 @@ export default async function HomePage() {
             </div>
             <div>
               <span className="font-bold text-base tracking-tight text-white">
-                Vintage City Estate Islamiyya
+                Madarasatul Islamiyya wa Tarbiyya
               </span>
-              <p className="text-[10px] text-emerald-300 font-medium">Management Portal (VCE-IMP)</p>
+              <p className="text-[10px] text-emerald-300 font-medium">Management Portal (MIWT)</p>
             </div>
           </div>
 
@@ -66,7 +66,7 @@ export default async function HomePage() {
           </h1>
 
           <p className="text-base text-slate-600 leading-relaxed max-w-2xl mx-auto">
-            Welcome to the centralized management system for <strong>Vintage City Estate Islamiyya</strong>. Real-time attendance tracking, 12-month fee ledger, Tahfiz progress report cards, and parent-committee communications.
+            Welcome to the centralized management system for <strong>Madarasatul Islamiyya wa Tarbiyya</strong>. Real-time attendance tracking, 12-month fee ledger, Tahfiz progress report cards, and parent-committee communications.
           </p>
 
           <div className="pt-4 flex flex-wrap items-center justify-center gap-4">
@@ -138,7 +138,7 @@ export default async function HomePage() {
 
       {/* Footer */}
       <footer className="border-t border-slate-200/80 bg-white/70 py-6 text-center text-xs text-slate-500 space-y-1">
-        <p>Vintage City Estate Islamiyya Management Portal &bull; All Rights Reserved © {new Date().getFullYear()}</p>
+        <p>Madarasatul Islamiyya wa Tarbiyya Management Portal &bull; All Rights Reserved © {new Date().getFullYear()}</p>
         <p className="font-semibold text-emerald-800">Powered by MaSha Tech Innovations</p>
       </footer>
     </div>

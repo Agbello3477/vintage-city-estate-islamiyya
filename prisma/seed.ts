@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("🌱 Starting database seed for Vintage City Estate Islamiyya...");
+  console.log("🌱 Starting database seed for Madarasatul Islamiyya wa Tarbiyya...");
 
   // Clean existing tables
   await prisma.revokedToken.deleteMany();

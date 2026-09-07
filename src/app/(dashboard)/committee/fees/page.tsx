@@ -49,7 +49,7 @@ export default async function CommitteeFeesPage() {
         <div>
           <h2 className="text-xl font-bold text-slate-800">12-Month Master Fee Ledger</h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Full override authority and financial auditing for Vintage City Estate Islamiyya
+            Full override authority and financial auditing for Madarasatul Islamiyya wa Tarbiyya
           </p>
         </div>
       </div>

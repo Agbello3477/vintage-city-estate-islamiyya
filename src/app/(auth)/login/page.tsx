@@ -69,7 +69,7 @@ export default function LoginPage() {
           بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
         </p>
         <h2 className="text-2xl font-black tracking-tight text-slate-900">
-          Vintage City Estate Islamiyya
+          Madarasatul Islamiyya wa Tarbiyya
         </h2>
         <p className="text-xs text-slate-500 font-medium">
           Sign in to your role dashboard (Super Admin, Teacher, or Parent)

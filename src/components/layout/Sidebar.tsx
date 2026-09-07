@@ -109,7 +109,7 @@ export function Sidebar({ user }: SidebarProps) {
       </div>
 
       <div className="pt-4 border-t border-slate-100 text-[11px] text-slate-400 text-center space-y-1">
-        <div>Vintage City Estate Islamiyya © {new Date().getFullYear()}</div>
+        <div>Madarasatul Islamiyya wa Tarbiyya © {new Date().getFullYear()}</div>
         <div className="font-semibold text-emerald-800">Powered by MaSha Tech Innovations</div>
       </div>
     </aside>

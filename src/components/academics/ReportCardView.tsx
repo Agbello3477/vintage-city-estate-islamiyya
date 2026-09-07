@@ -66,7 +66,7 @@ export function ReportCardView({
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
       pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`VCE_Islamiyya_ReportCard_${student.admissionNumber.replace(/\//g, "_")}.pdf`);
+      pdf.save(`MIWT_Islamiyya_ReportCard_${student.admissionNumber.replace(/\//g, "_")}.pdf`);
       toast.success("Report card downloaded successfully!");
     } catch (err: any) {
       toast.error(err.message || "Failed to generate PDF");
@@ -141,7 +141,7 @@ export function ReportCardView({
               <span className="text-2xl sm:text-3xl">🕌</span>
               <div>
                 <h1 className="text-xl sm:text-2xl font-black tracking-tight text-emerald-950 uppercase">
-                  Vintage City Estate Islamiyya
+                  Madarasatul Islamiyya wa Tarbiyya
                 </h1>
                 <p className="text-[10px] sm:text-xs font-bold text-emerald-700 tracking-wide uppercase">
                   Knowledge &bull; Faith &bull; Excellence &bull; Character
@@ -281,11 +281,11 @@ export function ReportCardView({
             <div>
               <div className="h-8 flex items-center justify-center">
                 <div className="w-8 h-8 rounded-full border-2 border-emerald-700/60 flex items-center justify-center text-[8px] font-black text-emerald-800 uppercase tracking-tighter transform rotate-[-8deg]">
-                  VCE SEAL
+                  MIWT SEAL
                 </div>
               </div>
               <div className="border-t border-slate-400 pt-1 font-bold text-slate-800 text-[10px]">
-                Official Estate Seal
+                Official Islamiyya Seal
               </div>
             </div>
 

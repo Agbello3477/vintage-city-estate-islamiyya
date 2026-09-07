@@ -56,7 +56,7 @@ export default async function CommitteeDashboardPage() {
             <Badge variant="islamic">Super Admin</Badge>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
-            Welcome back, {user.fullName}. Overview of Vintage City Estate Islamiyya operations.
+            Welcome back, {user.fullName}. Overview of Madarasatul Islamiyya wa Tarbiyya operations.
           </p>
         </div>
 

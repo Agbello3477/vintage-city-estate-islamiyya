@@ -1,6 +1,6 @@
-# 🕌 Vintage City Estate Islamiyya Management Portal (VCE-IMP)
+# 🕌 Madarasatul Islamiyya wa Tarbiyya Management Portal (MIWT)
 
-A secure, scalable, role-based School Management & Parent Portal for **Vintage City Estate Islamiyya**. Built with Next.js 14 App Router, TypeScript, Tailwind CSS, Prisma ORM, and JWT authentication with HTTP-Only cookies, token revocation, sliding-window rate limiting, and immutable audit logs.
+A secure, scalable, role-based School Management & Parent Portal for **Madarasatul Islamiyya wa Tarbiyya**. Built with Next.js 14 App Router, TypeScript, Tailwind CSS, Prisma ORM, and JWT authentication with HTTP-Only cookies, token revocation, sliding-window rate limiting, and immutable audit logs.
 
 ---
 

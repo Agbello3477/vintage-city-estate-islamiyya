@@ -3,8 +3,8 @@ import "./globals.css";
 import { ToastProvider } from "@/components/ui/ToastProvider";
 
 export const metadata: Metadata = {
-  title: "Vintage City Estate Islamiyya | Management Portal (VCE-IMP)",
-  description: "Secure, modern school management and parent portal for Vintage City Estate Islamiyya.",
+  title: "Madarasatul Islamiyya wa Tarbiyya | Management Portal",
+  description: "Secure, modern school management and parent portal for Madarasatul Islamiyya wa Tarbiyya.",
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",
