@@ -26,6 +26,7 @@ model User {
   submittedTickets        FeedbackTicket[]     @relation("ParentTickets")
   respondedTickets        FeedbackTicket[]     @relation("CommitteeResponses")
   auditLogs               AuditLog[]           @relation("UserAuditLogs")
+  notifications           Notification[]       @relation("UserNotifications")
 
   @@index([role])
   @@index([email])
@@ -214,3 +215,23 @@ model TahfizProgress {
   @@index([juzNumber])
   @@index([surahNumber])
 }
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  type      String   // ATTENDANCE, ACADEMIC, TAHFIZ, FEE, TICKET, ENROLLMENT, BROADCAST, SYSTEM
+  link      String?  // e.g. /parent/academics, /parent/attendance, /committee/tickets, /parent/fees
+  isRead    Boolean  @default(false)
+  metadata  String?  // Optional JSON string for extra contextual tags
+  createdAt DateTime @default(now())
+
+  user      User     @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([type])
+  @@index([createdAt])
+}
+

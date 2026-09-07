@@ -109,7 +109,7 @@ export default async function CommitteeDashboardPage() {
       </div>
 
       {/* Quick Navigation Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Link
           href="/committee/users"
           className="p-5 bg-white rounded-2xl border border-slate-200 hover:border-emerald-300 shadow-sm hover:shadow transition-all group"
@@ -122,7 +122,7 @@ export default async function CommitteeDashboardPage() {
           </div>
           <h3 className="font-bold text-slate-800 text-base mt-3">Manage Parents & Teachers</h3>
           <p className="text-xs text-slate-500 mt-1">
-            Add, edit, deactivate, and manage Parent and Ustadh profiles, link children, and assign classes.
+            Add, edit, and manage Parent and Ustadh profiles, link children, and assign classes.
           </p>
         </Link>
 
@@ -143,6 +143,22 @@ export default async function CommitteeDashboardPage() {
         </Link>
 
         <Link
+          href="/notifications"
+          className="p-5 bg-white rounded-2xl border border-slate-200 hover:border-emerald-300 shadow-sm hover:shadow transition-all group"
+        >
+          <div className="flex items-center justify-between">
+            <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-700 flex items-center justify-center font-bold">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-rose-700 group-hover:translate-x-1 transition-all" />
+          </div>
+          <h3 className="font-bold text-slate-800 text-base mt-3">Notifications & Broadcasts</h3>
+          <p className="text-xs text-slate-500 mt-1">
+            Broadcast estate notices to all parents & Ustadhs and audit real-time system alerts.
+          </p>
+        </Link>
+
+        <Link
           href="/committee/audit-logs"
           className="p-5 bg-white rounded-2xl border border-slate-200 hover:border-emerald-300 shadow-sm hover:shadow transition-all group"
         >
@@ -154,7 +170,7 @@ export default async function CommitteeDashboardPage() {
           </div>
           <h3 className="font-bold text-slate-800 text-base mt-3">Immutable Audit Logs</h3>
           <p className="text-xs text-slate-500 mt-1">
-            Inspect all system mutations, grade modifications, and authentication attempts.
+            Inspect all system mutations, fee status overrides, and authentication attempts.
           </p>
         </Link>
       </div>

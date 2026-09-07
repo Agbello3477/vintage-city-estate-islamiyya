@@ -17,6 +17,7 @@ import {
   History,
   Sparkles,
   Award,
+  Bell,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -35,6 +36,7 @@ export function Sidebar({ user }: SidebarProps) {
     { href: "/committee/academics", label: "Academic Performance", icon: BookOpenCheck },
     { href: "/committee/fees", label: "12-Month Fee Ledger", icon: Receipt },
     { href: "/committee/tickets", label: "Feedback & Complaints", icon: MessageSquareWarning },
+    { href: "/notifications", label: "Notifications & Alerts", icon: Bell },
     { href: "/committee/audit-logs", label: "Immutable Audit Trail", icon: History },
   ];
 
@@ -44,6 +46,7 @@ export function Sidebar({ user }: SidebarProps) {
     { href: "/teacher/attendance", label: "Batch Attendance", icon: CalendarCheck },
     { href: "/teacher/gradebook", label: "Tahfiz & Grades", icon: BookOpenCheck },
     { href: "/teacher/fees", label: "Class Fee Status", icon: Receipt },
+    { href: "/notifications", label: "Notifications & Alerts", icon: Bell },
   ];
 
   const parentLinks = [
@@ -52,6 +55,7 @@ export function Sidebar({ user }: SidebarProps) {
     { href: "/parent/academics", label: "Performance & Report Cards", icon: Award },
     { href: "/parent/fees", label: "12-Month Fee Status", icon: Receipt },
     { href: "/parent/tickets", label: "Feedback & Inquiries", icon: MessageSquareWarning },
+    { href: "/notifications", label: "Notifications & Alerts", icon: Bell },
   ];
 
   let links = parentLinks;

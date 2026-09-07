@@ -14,6 +14,16 @@ import {
 import { recordAuditLog } from "./audit";
 import { checkRateLimit, resetRateLimit } from "./rate-limit";
 import {
+  createNotification,
+  createBulkNotifications,
+  notifyParentOfStudent,
+  notifyCommittee,
+  notifyTeacher,
+  notifyAllUsers,
+  getUserNotifications,
+  getUnreadNotificationCount,
+} from "./notifications";
+import {
   loginSchema,
   userCreateSchema,
   classCreateSchema,
@@ -354,9 +364,25 @@ export async function enrollStudentAction(formData: FormData) {
     details: `Enrolled student ${student.fullName} (${student.admissionNumber}) into class ${student.class.name}`,
   });
 
+  // 🔔 In-App Notification: Notify Parent & Committee
+  await notifyParentOfStudent(student.id, {
+    title: "🎉 Enrollment Confirmed",
+    message: `Assalamu Alaikum! Your child ${student.fullName} (Adm: ${student.admissionNumber}) has been successfully enrolled in ${student.class.name}.`,
+    type: "ENROLLMENT",
+    link: "/parent",
+  });
+
+  await notifyCommittee({
+    title: "New Student Enrolled",
+    message: `${student.fullName} was enrolled into ${student.class.name} by ${session.fullName}.`,
+    type: "ENROLLMENT",
+    link: "/committee/students",
+  });
+
   revalidatePath("/committee/students");
   revalidatePath("/committee/users");
   revalidatePath("/teacher/students");
+  revalidatePath("/notifications");
   return { success: true, student };
 }
 
@@ -519,9 +545,24 @@ export async function markSingleAttendanceAction(data: {
     details: `${session.fullName} marked ${data.status} for student (Date: ${data.sessionDate}, Action: ${data.action})`,
   });
 
+  // 🔔 In-App Notification: Notify Parent
+  const student = await db.student.findUnique({
+    where: { id: data.studentId },
+    select: { fullName: true },
+  });
+  await notifyParentOfStudent(data.studentId, {
+    title: `📅 Attendance: ${data.status}`,
+    message: `${student?.fullName || "Your child"} was marked ${data.status} for session on ${data.sessionDate}${
+      data.action === "CHECK_IN" ? " (Checked In)" : data.action === "CHECK_OUT" ? " (Checked Out)" : ""
+    }.`,
+    type: "ATTENDANCE",
+    link: "/parent/attendance",
+  });
+
   revalidatePath("/teacher/attendance");
   revalidatePath("/committee/attendance");
   revalidatePath("/parent/attendance");
+  revalidatePath("/notifications");
   return { success: true, record };
 }
 
@@ -586,6 +627,15 @@ export async function batchAttendanceAction(params: {
         remarks: item.remarks || existing?.remarks || null,
       },
     });
+
+    // 🔔 Notify Parent
+    const s = await db.student.findUnique({ where: { id: item.studentId }, select: { fullName: true } });
+    await notifyParentOfStudent(item.studentId, {
+      title: `📅 Attendance: ${item.status}`,
+      message: `${s?.fullName || "Your child"} was marked ${item.status} for Islamiyya session on ${params.sessionDate}.`,
+      type: "ATTENDANCE",
+      link: "/parent/attendance",
+    });
   }
 
   await recordAuditLog({
@@ -597,6 +647,7 @@ export async function batchAttendanceAction(params: {
   revalidatePath("/teacher/attendance");
   revalidatePath("/committee/attendance");
   revalidatePath("/parent/attendance");
+  revalidatePath("/notifications");
   return { success: true };
 }
 
@@ -644,6 +695,15 @@ export async function batchSaveAttendanceAction(params: {
         markedById: session.id,
         remarks: item.remarks !== undefined ? item.remarks : null,
       },
+    });
+
+    // 🔔 Notify Parent
+    const s = await db.student.findUnique({ where: { id: item.studentId }, select: { fullName: true } });
+    await notifyParentOfStudent(item.studentId, {
+      title: `📅 Attendance: ${item.status}`,
+      message: `${s?.fullName || "Your child"} was marked ${item.status} for Islamiyya session on ${params.sessionDate}.`,
+      type: "ATTENDANCE",
+      link: "/parent/attendance",
     });
   }
 
@@ -710,9 +770,18 @@ export async function createAcademicRecordAction(formData: FormData) {
     details: `${session.fullName} entered score ${record.score}/${record.totalObtainable} for ${record.student.fullName} in [${record.subject}: ${record.title}]`,
   });
 
+  // 🔔 In-App Notification: Notify Parent of new assessment grade
+  await notifyParentOfStudent(record.studentId, {
+    title: `📝 Assessment Grade: ${record.subject}`,
+    message: `${record.student.fullName} scored ${record.score}/${record.totalObtainable} in ${record.subject} ("${record.title}").`,
+    type: "ACADEMIC",
+    link: "/parent/academics",
+  });
+
   revalidatePath("/teacher/gradebook");
   revalidatePath("/committee/academics");
   revalidatePath("/parent/academics");
+  revalidatePath("/notifications");
   return { success: true, record };
 }
 
@@ -807,9 +876,20 @@ export async function toggleFeePaymentAction(data: {
       }`,
     });
 
+    // 🔔 In-App Notification: Notify Parent of fee update
+    await notifyParentOfStudent(data.studentId, {
+      title: isPaid ? "💳 Fee Payment Cleared" : "⚠️ Fee Status Due",
+      message: `Month ${monthIndex} fee for ${student.fullName} has been marked as ${
+        isPaid ? `PAID (₦${updated.amountPaid.toLocaleString()})` : "UNPAID / DUE"
+      } by ${session.fullName}.`,
+      type: "FEE",
+      link: "/parent/fees",
+    });
+
     revalidatePath("/teacher/fees");
     revalidatePath("/committee/fees");
     revalidatePath("/parent/fees");
+    revalidatePath("/notifications");
     return { success: true, updated };
   } catch (err: any) {
     console.error("Error updating fee payment record:", err);
@@ -855,8 +935,17 @@ export async function submitFeedbackTicketAction(formData: FormData) {
     details: `Parent ${session.fullName} submitted ticket [${ticket.category}]: ${ticket.title}`,
   });
 
+  // 🔔 In-App Notification: Notify Committee of new ticket
+  await notifyCommittee({
+    title: `📩 New Ticket [${ticket.category}]`,
+    message: `${session.fullName} submitted an inquiry: "${ticket.title}".`,
+    type: "TICKET",
+    link: "/committee/tickets",
+  });
+
   revalidatePath("/parent/tickets");
   revalidatePath("/committee/tickets");
+  revalidatePath("/notifications");
   return { success: true, ticket };
 }
 
@@ -885,6 +974,9 @@ export async function respondTicketAction(formData: FormData) {
       respondedById: session.id,
       respondedAt: new Date(),
     },
+    include: {
+      parent: true,
+    },
   });
 
   await recordAuditLog({
@@ -894,8 +986,18 @@ export async function respondTicketAction(formData: FormData) {
     details: `Committee ${session.fullName} updated ticket status to ${ticket.status} with official response`,
   });
 
+  // 🔔 In-App Notification: Notify Parent of committee reply
+  await createNotification({
+    userId: ticket.parentId,
+    title: `💬 Committee Response: ${ticket.title}`,
+    message: `The Islamiyya Committee responded to your ticket: "${ticket.title}". Status: ${ticket.status}.`,
+    type: "TICKET",
+    link: "/parent/tickets",
+  });
+
   revalidatePath("/committee/tickets");
   revalidatePath("/parent/tickets");
+  revalidatePath("/notifications");
   return { success: true, ticket };
 }
 
@@ -970,16 +1072,32 @@ export async function saveTahfizProgressAction(data: {
     });
   }
 
+  const student = await db.student.findUnique({
+    where: { id: data.studentId },
+    select: { fullName: true },
+  });
+
   await recordAuditLog({
     action: "TAHFIZ_EVALUATION_SAVED",
     entityType: "TAHFIZ_PROGRESS",
     entityId: record.id,
-    details: `${session.fullName} evaluated Tahfiz for student on Surah ${data.surahName} (Status: ${data.status}, Quality: ${data.quality})`,
+    details: `${session.fullName} evaluated Tahfiz for ${student?.fullName || "student"} on Surah ${data.surahName} (Status: ${data.status}, Quality: ${data.quality})`,
+  });
+
+  // 🔔 In-App Notification: Notify Parent with voice note indicator
+  await notifyParentOfStudent(data.studentId, {
+    title: `📖 Quran Tahfiz: Surah ${data.surahName}`,
+    message: `${student?.fullName || "Your child"} was evaluated on Surah ${data.surahName} (${data.quality})${
+      data.voiceNote ? " with an audio voice note from the Ustadh" : ""
+    }.`,
+    type: "TAHFIZ",
+    link: "/parent/academics",
   });
 
   revalidatePath("/parent/academics");
   revalidatePath("/teacher/gradebook");
   revalidatePath("/committee/academics");
+  revalidatePath("/notifications");
   return { success: true, record };
 }
 
@@ -1003,5 +1121,98 @@ export async function deleteTahfizProgressAction(id: string) {
   revalidatePath("/parent/academics");
   revalidatePath("/teacher/gradebook");
   revalidatePath("/committee/academics");
+  revalidatePath("/notifications");
   return { success: true };
+}
+
+// --- NOTIFICATION MANAGEMENT ACTIONS ---
+
+export async function fetchNotificationsAction(options?: {
+  onlyUnread?: boolean;
+  limit?: number;
+  type?: string;
+}) {
+  const session = await getSession();
+  if (!session) return { notifications: [], unreadCount: 0 };
+
+  const [notifications, unreadCount] = await Promise.all([
+    getUserNotifications(session.id, options),
+    getUnreadNotificationCount(session.id),
+  ]);
+
+  return { notifications, unreadCount };
+}
+
+export async function markNotificationReadAction(notificationId: string) {
+  const session = await getSession();
+  if (!session) return { error: "Unauthorized" };
+
+  await db.notification.updateMany({
+    where: { id: notificationId, userId: session.id },
+    data: { isRead: true },
+  });
+
+  revalidatePath("/notifications");
+  return { success: true };
+}
+
+export async function markAllNotificationsReadAction() {
+  const session = await getSession();
+  if (!session) return { error: "Unauthorized" };
+
+  await db.notification.updateMany({
+    where: { userId: session.id, isRead: false },
+    data: { isRead: true },
+  });
+
+  revalidatePath("/notifications");
+  return { success: true };
+}
+
+export async function deleteNotificationAction(notificationId: string) {
+  const session = await getSession();
+  if (!session) return { error: "Unauthorized" };
+
+  await db.notification.deleteMany({
+    where: { id: notificationId, userId: session.id },
+  });
+
+  revalidatePath("/notifications");
+  return { success: true };
+}
+
+export async function broadcastAnnouncementAction(formData: FormData) {
+  const session = await getSession();
+  if (!session || session.role !== "COMMITTEE") {
+    return { error: "Unauthorized: Only Committee members can broadcast announcements." };
+  }
+
+  const title = formData.get("title")?.toString().trim() || "";
+  const message = formData.get("message")?.toString().trim() || "";
+  const targetRole = (formData.get("targetRole")?.toString() || "ALL") as "ALL" | "COMMITTEE" | "TEACHER" | "PARENT";
+  const link = formData.get("link")?.toString().trim() || "";
+
+  if (!title || title.length < 3) {
+    return { error: "Announcement title must be at least 3 characters." };
+  }
+  if (!message || message.length < 5) {
+    return { error: "Announcement message must be at least 5 characters." };
+  }
+
+  const result = await notifyAllUsers(targetRole, {
+    title: `📢 Announcement: ${title}`,
+    message,
+    type: "BROADCAST",
+    link: link || undefined,
+  });
+
+  await recordAuditLog({
+    action: "BROADCAST_ANNOUNCEMENT",
+    entityType: "NOTIFICATION",
+    details: `${session.fullName} broadcasted announcement "${title}" to ${targetRole} (${result.count} recipients)`,
+  });
+
+  revalidatePath("/notifications");
+  revalidatePath("/committee");
+  return { success: true, count: result.count };
 }

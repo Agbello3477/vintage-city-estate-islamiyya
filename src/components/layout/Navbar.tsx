@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SessionUser, ROLE_LABELS } from "@/types";
 import { DemoSwitcher } from "./DemoSwitcher";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { logoutAction } from "@/lib/actions";
 import { cn } from "@/lib/utils";
 import {
@@ -24,6 +25,7 @@ import {
   History,
   Award,
   Calendar,
+  Bell,
 } from "lucide-react";
 
 interface NavbarProps {
@@ -54,6 +56,7 @@ export function Navbar({ user }: NavbarProps) {
     { href: "/committee/academics", label: "Academic Performance", icon: BookOpenCheck },
     { href: "/committee/fees", label: "12-Month Fee Ledger", icon: Receipt },
     { href: "/committee/tickets", label: "Feedback & Complaints", icon: MessageSquareWarning },
+    { href: "/notifications", label: "Notifications & Alerts", icon: Bell },
     { href: "/committee/audit-logs", label: "Immutable Audit Trail", icon: History },
   ];
 
@@ -63,6 +66,7 @@ export function Navbar({ user }: NavbarProps) {
     { href: "/teacher/attendance", label: "Batch Attendance", icon: CalendarCheck },
     { href: "/teacher/gradebook", label: "Tahfiz & Grades", icon: BookOpenCheck },
     { href: "/teacher/fees", label: "Class Fee Status", icon: Receipt },
+    { href: "/notifications", label: "Notifications & Alerts", icon: Bell },
   ];
 
   const parentLinks = [
@@ -71,6 +75,7 @@ export function Navbar({ user }: NavbarProps) {
     { href: "/parent/academics", label: "Performance & Report Cards", icon: Award },
     { href: "/parent/fees", label: "12-Month Fee Status", icon: Receipt },
     { href: "/parent/tickets", label: "Feedback & Inquiries", icon: MessageSquareWarning },
+    { href: "/notifications", label: "Notifications & Alerts", icon: Bell },
   ];
 
   let links = parentLinks;
@@ -107,7 +112,10 @@ export function Navbar({ user }: NavbarProps) {
           </div>
 
           {/* User Profile & Actions (Desktop) */}
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-3">
+            {/* Notification Bell */}
+            <NotificationBell />
+
             <div className="flex items-center gap-3 bg-emerald-800/60 border border-emerald-700/60 rounded-xl px-3 py-1.5">
               <div className="w-8 h-8 rounded-lg bg-emerald-700 flex items-center justify-center text-white font-bold text-xs border border-emerald-500/40">
                 {user.fullName.charAt(0)}
@@ -134,8 +142,9 @@ export function Navbar({ user }: NavbarProps) {
             </form>
           </div>
 
-          {/* Mobile Right Controls: Switcher & Hamburger */}
+          {/* Mobile Right Controls: Notification Bell, Switcher & Hamburger */}
           <div className="flex items-center gap-1.5 md:hidden">
+            <NotificationBell />
             <div className="scale-90 origin-right">
               <DemoSwitcher currentRole={user.role} />
             </div>
